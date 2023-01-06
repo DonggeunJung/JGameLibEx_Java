@@ -52,6 +52,8 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     public void onBtn2(View v) {
         gameBackground.addResource(R.drawable.scroll_back_woods);
         gameBackground.setImageIndex(1);
+        gameBackground.sourceArea(0, 0, 30, 100);
+        gameBackground.sourceArea(70, 0, 4);
     }
 
     // User Event end ====================================
@@ -81,6 +83,12 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
             imgHeart.resize(9, 6);
             imgHeart.move(34, 12);
         }
+    }
+
+    @Override
+    public void onSourceAreaEnded(JGameLib.Image img) {
+        gameBackground.sourceArea(0, 0, 30, 100);
+        gameBackground.sourceArea(70, 0, 4);
     }
 
     @Override
