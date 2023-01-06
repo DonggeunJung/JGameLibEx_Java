@@ -25,9 +25,10 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     }
 
     private void initGame() {
-        gameLib.setBackgroundResource(R.drawable.anipang_standby);
+        gameLib.setScreenAxis(100,140);
+        gameLib.setBackground(R.drawable.anipang_standby);
         gameLib.listener(this);
-        imgHeart = gameLib.addImage(R.drawable.icon_heart1, 9, 0.8, 34, 8);
+        imgHeart = gameLib.addImage(R.drawable.icon_heart1, 34, 12, 9, 6);
         gameLib.addResource(imgHeart, R.drawable.progressing00);
         gameLib.addResource(imgHeart, R.drawable.progressing01);
         gameLib.addResource(imgHeart, R.drawable.progressing02);
@@ -41,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     }
 
     public void onBtn1(View v) {
-        gameLib.move(imgHeart, 34, 67, 1.0);
+        gameLib.move(imgHeart, 45, 95, 1.0);
     }
 
     // Event start ====================================
@@ -49,7 +50,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     @Override
     public void onMoveEnded(JGameLib.Image img) {
         if(img == imgHeart) {
-            gameLib.resize(imgHeart, 23, 1.0, 0.8);
+            gameLib.resize(imgHeart, 25, 25, 0.8);
             gameLib.playAudioBeep(R.raw.fireworks_fire);
         }
     }
@@ -66,8 +67,8 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     public void onAnimationEnded(JGameLib.Image img) {
         if(img == imgHeart) {
             gameLib.setImageIndex(imgHeart, 0);
-            gameLib.resize(imgHeart, 9, 0.8);
-            gameLib.move(imgHeart, 34, 8);
+            gameLib.resize(imgHeart, 9, 6);
+            gameLib.move(imgHeart, 34, 12);
         }
     }
 

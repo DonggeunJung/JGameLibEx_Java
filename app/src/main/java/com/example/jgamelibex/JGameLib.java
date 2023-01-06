@@ -23,9 +23,14 @@ import java.util.Iterator;
 
 public class JGameLib extends View {
     boolean firstDraw = true;
-    float scrWidth = 480, scrHeight = 800;
+    float pixelsW = 480, pixelsH = 800;
+    float blocksW = 480, blocksH = 800;
+    RectF scrRect;
+    float blockSize = pixelsH / blocksH;
     int timerGap = 50;
     boolean needDraw = false;
+    int backgroundResId = -1;
+    Bitmap backgroundBmp = null;
     HashSet<Image> images = new HashSet();
     Image touchedImg = null;
     float touchX = 0;
@@ -35,13 +40,35 @@ public class JGameLib extends View {
         super(context, attrs);
     }
 
-    public void init(Canvas canvas) {
-        scrWidth = canvas.getWidth();
-        scrHeight = canvas.getHeight();
+    void init(Canvas canvas) {
+        pixelsW = canvas.getWidth();
+        pixelsH = canvas.getHeight();
+        scrRect = getScreenRect();
+        blockSize = scrRect.width() / blocksW;
         timer.sendEmptyMessageDelayed(0, timerGap);
     }
 
-    public void redraw() {
+    RectF getScreenRect() {
+        float pixelsRatio = pixelsW / pixelsH;
+        float blocksRatio = blocksW / blocksH;
+        RectF rect = new RectF();
+        if(pixelsRatio > blocksRatio) {
+            rect.top = 0;
+            rect.bottom = pixelsH;
+            float screenW = pixelsH * blocksRatio;
+            rect.left = (pixelsW - screenW) / 2.f;
+            rect.right = rect.left + screenW;
+        } else {
+            rect.left = 0;
+            rect.right = pixelsW;
+            float screenH = pixelsW / blocksRatio;
+            rect.top = (pixelsH - screenH) / 2.f;
+            rect.bottom = rect.top + screenH;
+        }
+        return rect;
+    }
+
+    void redraw() {
         this.invalidate();
     }
 
@@ -55,10 +82,17 @@ public class JGameLib extends View {
         pnt.setStyle(Paint.Style.FILL);
         pnt.setAntiAlias(true);
 
+        drawBackground(canvas, pnt);
         for(Image img : images) {
+            if(!img.visible) continue;
             RectF rect = getRect(img);
             canvas.drawBitmap(img.bmp, null, rect, pnt);
         }
+    }
+
+    void drawBackground(Canvas canvas, Paint pnt) {
+        if(backgroundBmp == null) return;
+        canvas.drawBitmap(backgroundBmp, null, scrRect, pnt);
     }
 
     Handler timer = new Handler(new Handler.Callback() {
@@ -77,31 +111,30 @@ public class JGameLib extends View {
 
     private RectF getRect(Image img) {
         RectF rect = new RectF();
-        rect.left = img.left / 100f * scrWidth;
-        rect.top = img.top / 100f * scrHeight;
-        float width = img.width / 100f * scrWidth;
-        rect.right = rect.left + width;
-        float height = width * img.ratio;
-        rect.bottom = rect.top + height;
+        rect.left = scrRect.left + img.left * blockSize;
+        rect.right = rect.left + img.width * blockSize;
+        rect.top = scrRect.top + img.top * blockSize;
+        rect.bottom = rect.top + img.height * blockSize;
         return rect;
     }
 
-    private float getRateHorizontal(float pixelH) {
-        return pixelH * 100f / scrWidth;
+    private float getBlocksHorizontal(float pixelH) {
+        return pixelH / blockSize;
     }
 
-    private float getRateVertical(float pixelV) {
-        return pixelV * 100f / scrHeight;
+    private float getBlocksVertical(float pixelV) {
+        return pixelV / blockSize;
     }
 
     Bitmap getBitmap(int resid) {
         return BitmapFactory.decodeResource(getResources(), resid);
     }
 
-    Image findImage(float x, float y) {
+    Image findImage(float pixelX, float pixelY) {
         for(Image img : images) {
+            if(!img.visible) continue;
             RectF rect = getRect(img);
-            if(rect.contains(x, y)) {
+            if(rect.contains(pixelX, pixelY)) {
                 return img;
             }
         }
@@ -111,10 +144,10 @@ public class JGameLib extends View {
     // Inside Class start ====================================
 
     class Image {
-        Image(int resid, double w, double r, double l, double t) {
+        Image(int resid, double l, double t, double w, double h) {
             idx = 0;
-            width = (float)w; ratio = (float)r;
             left = (float)l; top = (float)t;
+            width = (float)w; height = (float)h;
             resources.add(resid);
             loadBitmap();
         }
@@ -122,12 +155,12 @@ public class JGameLib extends View {
         ArrayList<Integer> resources = new ArrayList();
         double idx = 0;
         double unitIdx = 0, endIdx = 0;
-        float width, ratio;
-        float unitW=0, unitR=0;
-        float endW, endR;
         float left, top;
         float unitL=0, unitT=0;
         float endL, endT;
+        float width, height;
+        float unitW=0, unitH=0;
+        float endW, endH;
         boolean visible = true;
         Bitmap bmp;
 
@@ -152,15 +185,14 @@ public class JGameLib extends View {
         }
 
         public void nextResize() {
-            if(unitW == 0 && unitR == 0) return;
+            if(unitW == 0 && unitH == 0) return;
             width += unitW;
-            ratio += unitR;
+            height += unitH;
             if((unitW != 0 && Math.min(width,width-unitW) <= endW && endW <= Math.max(width,width-unitW))
-                    || (unitR != 0 && Math.min(ratio,ratio-unitR) <= endR && endR <= Math.max(ratio,ratio-unitR))) {
-                unitW = 0;
-                unitR = 0;
+                    || (unitH != 0 && Math.min(height,height-unitH) <= endH && endH <= Math.max(height,height-unitH))) {
+                unitW = unitH = 0;
                 width = endW;
-                ratio = endR;
+                height = endH;
                 if(listener != null) listener.onResizeEnded(this);
             }
             needDraw = true;
@@ -207,8 +239,19 @@ public class JGameLib extends View {
 
     // API start ====================================
 
-    public Image addImage(int resid, double w, double r, double l, double t)  {
-        Image img = new Image(resid, (float)w, (float)r, (float)l, (float)t);
+    public void setBackground(int resid) {
+        backgroundResId = resid;
+        backgroundBmp = getBitmap(resid);
+        needDraw = true;
+    }
+
+    public void setScreenAxis(float width, float height) {
+        blocksW = width;
+        blocksH = height;
+    }
+
+    public Image addImage(int resid, double l, double t, double w, double r)  {
+        Image img = new Image(resid, (float)l, (float)t, (float)w, (float)r);
         images.add(img);
         needDraw = true;
         return img;
@@ -229,23 +272,31 @@ public class JGameLib extends View {
         needDraw = true;
     }
 
-    public void resize(Image img, double w, double r) {
+    public void moveRelative(Image img, double gapH, double gapV) {
+        move(img, img.left+(float)gapH, img.top+(float)gapV);
+    }
+
+    public void moveRelative(Image img, double gapH, double gapV, double time) {
+        move(img, img.left+(float)gapH, img.top+(float)gapV, time);
+    }
+
+    public void resize(Image img, double w, double h) {
         img.width = (float)w;
-        img.ratio = (float)r;
+        img.height = (float)h;
         needDraw = true;
     }
 
-    public void resize(Image img, double w, double r, double time) {
+    public void resize(Image img, double w, double h, double time) {
         img.endW = (float)w;
-        img.endR = (float)r;
+        img.endH = (float)h;
         float frames = (float)framesOfTime(time);
         img.unitW = (img.endW - img.width) / frames;
-        img.unitR = (img.endR - img.ratio) / frames;
+        img.unitH = (img.endH - img.height) / frames;
 
         float centerH = img.left + (img.width / 2f);
         float endL = centerH - (img.endW / 2f);
-        float centerV = img.top + (img.width * img.ratio / 2f);
-        float endT = centerV - (img.endW * img.endR / 2f);
+        float centerV = img.top + (img.height / 2f);
+        float endT = centerV - (img.endH / 2f);
         move(img, endL, endT, time);
     }
 
@@ -286,15 +337,15 @@ public class JGameLib extends View {
             for(int i = img.resources.size()-1; i >= 0; i--) {
                 img.resources.remove(i);
             }
-            images.remove(img);
         }
     }
 
     public void clearMemory() {
+        timer.removeMessages(0);
         deleteBGM();
-        Iterator itrt = images.iterator();
-        while(itrt.hasNext()) {
-            Image img = (Image)itrt.next();
+        Iterator itr = images.iterator();
+        while(itr.hasNext()) {
+            Image img = (Image)itr.next();
             deleteImageResources(img);
             images.remove(img);
         }
@@ -322,28 +373,32 @@ public class JGameLib extends View {
 
     public boolean onTouchEvent(MotionEvent event) {
         super.onTouchEvent(event);
-        float x1 = event.getX();
-        float y1 = event.getY();
-        float rateH = 0, rateV = 0;
+        float pixelX = event.getX();
+        float pixelY = event.getY();
+        float blockX = 0, blockY = 0;
         Image img = touchedImg;
 
         switch(event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                img = touchedImg = findImage(x1, y1);
+                img = touchedImg = findImage(pixelX, pixelY);
+                blockX = getBlocksHorizontal(pixelX);
+                blockY = getBlocksVertical(pixelY);
                 break;
             case MotionEvent.ACTION_MOVE :
-                rateH = getRateHorizontal(x1 - touchX);
-                rateV = getRateVertical(y1 - touchY);
+                blockX = getBlocksHorizontal(pixelX - touchX);
+                blockY = getBlocksVertical(pixelY - touchY);
                 break;
             case MotionEvent.ACTION_UP :
                 touchedImg = null;
+                blockX = getBlocksHorizontal(pixelX);
+                blockY = getBlocksVertical(pixelY);
                 break;
         }
         if(listener != null) {
-            listener.onGameTouchEvent(img, event.getAction(), rateH, rateV);
+            listener.onGameTouchEvent(img, event.getAction(), blockX, blockY);
         }
-        touchX = x1;
-        touchY = y1;
+        touchX = pixelX;
+        touchY = pixelY;
         return true;
     }
 
