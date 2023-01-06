@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.media.MediaPlayer;
 import android.media.SoundPool;
@@ -82,17 +83,26 @@ public class JGameLib extends View {
         pnt.setStyle(Paint.Style.FILL);
         pnt.setAntiAlias(true);
 
-        drawBackground(canvas, pnt);
+        drawBitmap(canvas, pnt, backgroundBmp);
         for(Image img : images) {
             if(!img.visible) continue;
             RectF rect = getRect(img);
-            canvas.drawBitmap(img.bmp, null, rect, pnt);
+            drawBitmap(canvas, pnt, img.bmp, rect);
         }
     }
+    void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp) {
+        drawBitmap(canvas, pnt, bmp, scrRect);
+    }
 
-    void drawBackground(Canvas canvas, Paint pnt) {
-        if(backgroundBmp == null) return;
-        canvas.drawBitmap(backgroundBmp, null, scrRect, pnt);
+    void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp, RectF rectDst) {
+        if(bmp == null) return;
+        Rect rectSrc = new Rect(0,0, bmp.getWidth(), bmp.getHeight());
+        drawBitmap(canvas, pnt, bmp, rectDst, rectSrc);
+    }
+
+    void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp, RectF rectDst, Rect rectSrc) {
+        if(bmp == null) return;
+        canvas.drawBitmap(bmp, rectSrc, rectDst, pnt);
     }
 
     Handler timer = new Handler(new Handler.Callback() {
@@ -363,7 +373,7 @@ public class JGameLib extends View {
         void onMoveEnded(Image img);
         void onResizeEnded(Image img);
         void onAnimationEnded(Image img);
-        void onGameTouchEvent(Image img, int action, float rateH, float rateV);
+        void onGameTouchEvent(Image img, int action, float blockX, float blockY);
         void onAudioCompletion(int resid);
     }
 

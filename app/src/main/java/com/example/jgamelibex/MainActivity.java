@@ -2,6 +2,7 @@ package com.example.jgamelibex;
 
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
 
 public class MainActivity extends AppCompatActivity implements JGameLib.GameEvent {
@@ -73,9 +74,9 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     }
 
     @Override
-    public void onGameTouchEvent(JGameLib.Image img, int action, float rateH, float rateV) {
-        if(img == imgHeart) {
-            gameLib.move(img, img.left + rateH, img.top + rateV);
+    public void onGameTouchEvent(JGameLib.Image img, int action, float blockX, float blockY) {
+        if(img == imgHeart && action == MotionEvent.ACTION_MOVE) {
+            gameLib.moveRelative(img, blockX, blockY);
         }
     }
 
