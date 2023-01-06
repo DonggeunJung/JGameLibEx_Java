@@ -19,20 +19,16 @@ import android.view.MotionEvent;
 import android.view.View;
 import androidx.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
 
 public class JGameLib extends View {
     boolean firstDraw = true;
     float pixelsW = 480, pixelsH = 800;
     float blocksW = 480, blocksH = 800;
-    RectF scrRect;
+    RectF screenRect;
     float blockSize = pixelsH / blocksH;
     int timerGap = 50;
     boolean needDraw = false;
-    int backgroundResId = -1;
-    Bitmap backgroundBmp = null;
-    HashSet<Image> images = new HashSet();
+    ArrayList<Image> images = new ArrayList();
     Image touchedImg = null;
     float touchX = 0;
     float touchY = 0;
@@ -44,8 +40,8 @@ public class JGameLib extends View {
     void init(Canvas canvas) {
         pixelsW = canvas.getWidth();
         pixelsH = canvas.getHeight();
-        scrRect = getScreenRect();
-        blockSize = scrRect.width() / blocksW;
+        screenRect = getScreenRect();
+        blockSize = screenRect.width() / blocksW;
         timer.sendEmptyMessageDelayed(0, timerGap);
     }
 
@@ -83,25 +79,20 @@ public class JGameLib extends View {
         pnt.setStyle(Paint.Style.FILL);
         pnt.setAntiAlias(true);
 
-        drawBitmap(canvas, pnt, backgroundBmp);
         for(Image img : images) {
             if(!img.visible) continue;
-            RectF rect = getRect(img);
-            drawBitmap(canvas, pnt, img.bmp, rect);
+            RectF rect = null;
+            if(img.dstRect != null) {
+                rect = getRect(img);
+            }
+            drawBitmap(canvas, pnt, img.bmp, rect, img.srcRect);
         }
-    }
-    void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp) {
-        drawBitmap(canvas, pnt, bmp, scrRect);
-    }
-
-    void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp, RectF rectDst) {
-        if(bmp == null) return;
-        Rect rectSrc = new Rect(0,0, bmp.getWidth(), bmp.getHeight());
-        drawBitmap(canvas, pnt, bmp, rectDst, rectSrc);
     }
 
     void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp, RectF rectDst, Rect rectSrc) {
         if(bmp == null) return;
+        if(rectDst == null)
+            rectDst = screenRect;
         canvas.drawBitmap(bmp, rectSrc, rectDst, pnt);
     }
 
@@ -120,11 +111,12 @@ public class JGameLib extends View {
     });
 
     private RectF getRect(Image img) {
-        RectF rect = new RectF();
-        rect.left = scrRect.left + img.dstRect.left * blockSize;
-        rect.right = scrRect.left + img.dstRect.right * blockSize;
-        rect.top = scrRect.top + img.dstRect.top * blockSize;
-        rect.bottom = scrRect.top + img.dstRect.bottom * blockSize;
+        RectF rect = new RectF(0,0,0,0);
+        if(img.dstRect == null) return rect;
+        rect.left = screenRect.left + img.dstRect.left * blockSize;
+        rect.right = screenRect.left + img.dstRect.right * blockSize;
+        rect.top = screenRect.top + img.dstRect.top * blockSize;
+        rect.bottom = screenRect.top + img.dstRect.bottom * blockSize;
         return rect;
     }
 
@@ -157,6 +149,14 @@ public class JGameLib extends View {
         return getBitmap(resid);
     }
 
+    int indexOf(Image img) {
+        for(int i = images.size()-1; i >= 0; i--) {
+            if(images.get(i) == img)
+                return i;
+        }
+        return -1;
+    }
+
     // Inside Class start ====================================
 
     class Image {
@@ -173,18 +173,19 @@ public class JGameLib extends View {
         boolean visible = true;
 
         Image(int resid) {
-            this(resid, 0, 0, blocksW, blocksH);
-        }
-
-        Image(int resid, double l, double t, double w, double h) {
-            idx = 0;
-            dstRect = new RectF((float)l, (float)t, (float)(l + w), (float)(t + h));
             resids.add(resid);
+            idx = 0;
             loadBmp();
         }
 
-        public void srcRect(Rect rect) {
+        public void sourceRect(int l, int t, int w, int h) {
+            Rect rect = new Rect(l, t, l+w, t+h);
+            sourceRect(rect);
+        }
+
+        public void sourceRect(Rect rect) {
             srcRect = rect;
+            needDraw = true;
         }
 
         public void addResource(int resid) {
@@ -262,21 +263,21 @@ public class JGameLib extends View {
 
     // API start ====================================
 
-    public void setBackground(int resid) {
-        backgroundResId = resid;
-        backgroundBmp = getBitmap(resid);
-        needDraw = true;
-    }
-
     public void setScreenAxis(float width, float height) {
         blocksW = width;
         blocksH = height;
     }
 
-    public Image addImage(int resid, double l, double t, double w, double r)  {
-        Image img = new Image(resid, (float)l, (float)t, (float)w, (float)r);
+    public Image addImage(int resid)  {
+        Image img = new Image(resid);
         images.add(img);
         needDraw = true;
+        return img;
+    }
+
+    public Image addImage(int resid, double l, double t, double w, double h)  {
+        Image img = addImage(resid);
+        img.dstRect = new RectF((float)l, (float)t, (float)(l + w), (float)(t + h));
         return img;
     }
 
@@ -333,14 +334,6 @@ public class JGameLib extends View {
         needDraw = true;
     }
 
-    public void addResource(Image img, int resid) {
-        img.addResource(resid);
-    }
-
-    public void removeResource(Image img, int idx) {
-        img.removeResource(idx);
-    }
-
     public void animation(Image img, double time) {
         if(img.resids.isEmpty()) return;
         animation(img, 0, img.resids.size()-1, time);
@@ -369,21 +362,19 @@ public class JGameLib extends View {
     }
 
     public void deleteImageResources(Image img) {
-        if(images.contains(img)) {
-            for(int i = img.resids.size()-1; i >= 0; i--) {
-                img.resids.remove(i);
-            }
+        if(img == null) return;
+        for(int i = img.resids.size()-1; i >= 0; i--) {
+            img.resids.remove(i);
         }
     }
 
     public void clearMemory() {
         timer.removeMessages(0);
         deleteBGM();
-        Iterator itr = images.iterator();
-        while(itr.hasNext()) {
-            Image img = (Image)itr.next();
+        for(int i = images.size()-1; i >= 0; i--) {
+            Image img = images.get(i);
             deleteImageResources(img);
-            images.remove(img);
+            images.remove(i);
         }
     }
 

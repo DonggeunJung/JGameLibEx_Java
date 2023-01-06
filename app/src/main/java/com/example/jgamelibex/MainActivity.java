@@ -8,6 +8,7 @@ import android.view.View;
 public class MainActivity extends AppCompatActivity implements JGameLib.GameEvent {
     JGameLib gameLib = null;
     JGameLib.Image imgHeart;
+    JGameLib.Image gameBackground;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,26 +28,34 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
 
     private void initGame() {
         gameLib.setScreenAxis(100,140);
-        gameLib.setBackground(R.drawable.anipang_standby);
         gameLib.listener(this);
+        gameBackground = gameLib.addImage(R.drawable.anipang_standby);
         imgHeart = gameLib.addImage(R.drawable.icon_heart1, 34, 12, 9, 6);
-        gameLib.addResource(imgHeart, R.drawable.progressing00);
-        gameLib.addResource(imgHeart, R.drawable.progressing01);
-        gameLib.addResource(imgHeart, R.drawable.progressing02);
-        gameLib.addResource(imgHeart, R.drawable.progressing03);
-        gameLib.addResource(imgHeart, R.drawable.progressing04);
-        gameLib.addResource(imgHeart, R.drawable.progressing05);
-        gameLib.addResource(imgHeart, R.drawable.progressing06);
-        gameLib.addResource(imgHeart, R.drawable.progressing07);
+        imgHeart.addResource(R.drawable.progressing00);
+        imgHeart.addResource(R.drawable.progressing01);
+        imgHeart.addResource(R.drawable.progressing02);
+        imgHeart.addResource(R.drawable.progressing03);
+        imgHeart.addResource(R.drawable.progressing04);
+        imgHeart.addResource(R.drawable.progressing05);
+        imgHeart.addResource(R.drawable.progressing06);
+        imgHeart.addResource(R.drawable.progressing07);
 
         gameLib.playBGM(R.raw.morning);
     }
+
+    // User Event start ====================================
 
     public void onBtn1(View v) {
         gameLib.move(imgHeart, 45, 95, 1.0);
     }
 
-    // Event start ====================================
+    public void onBtn2(View v) {
+        gameBackground.sourceRect(0,0,100,100);
+    }
+
+    // User Event end ====================================
+
+    // Game Event start ====================================
 
     @Override
     public void onMoveEnded(JGameLib.Image img) {
@@ -83,6 +92,6 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     @Override
     public void onAudioCompletion(int resid) {}
 
-    // Event end ====================================
+    // Game Event end ====================================
 
 }
