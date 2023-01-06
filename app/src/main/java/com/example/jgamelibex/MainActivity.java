@@ -46,11 +46,12 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     // User Event start ====================================
 
     public void onBtn1(View v) {
-        gameLib.move(imgHeart, 45, 95, 1.0);
+        imgHeart.move(45, 95, 1.0);
     }
 
     public void onBtn2(View v) {
-        gameBackground.sourceRect(0,0,100,100);
+        gameBackground.addResource(R.drawable.scroll_back_woods);
+        gameBackground.setImageIndex(1);
     }
 
     // User Event end ====================================
@@ -60,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     @Override
     public void onMoveEnded(JGameLib.Image img) {
         if(img == imgHeart) {
-            gameLib.resize(imgHeart, 25, 25, 0.8);
+            imgHeart.resize(25, 25, 0.8);
             gameLib.playAudioBeep(R.raw.fireworks_fire);
         }
     }
@@ -68,7 +69,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     @Override
     public void onResizeEnded(JGameLib.Image img) {
         if(img == imgHeart) {
-            gameLib.animation(imgHeart, 1, 8, 1);
+            imgHeart.animation(1, 8, 1);
             gameLib.playAudioBeep(R.raw.fireworks_boom);
         }
     }
@@ -76,16 +77,16 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     @Override
     public void onAnimationEnded(JGameLib.Image img) {
         if(img == imgHeart) {
-            gameLib.setImageIndex(imgHeart, 0);
-            gameLib.resize(imgHeart, 9, 6);
-            gameLib.move(imgHeart, 34, 12);
+            imgHeart.setImageIndex(0);
+            imgHeart.resize(9, 6);
+            imgHeart.move(34, 12);
         }
     }
 
     @Override
     public void onGameTouchEvent(JGameLib.Image img, int action, float blockX, float blockY) {
         if(img == imgHeart && action == MotionEvent.ACTION_MOVE) {
-            gameLib.moveRelative(img, blockX, blockY);
+            img.moveRelative(blockX, blockY);
         }
     }
 

@@ -220,7 +220,7 @@ public class JGameLib extends View {
                 nextT = endT;
                 if(listener != null) listener.onMoveEnded(this);
             }
-            move(this, nextL, nextT);
+            move(nextL, nextT);
         }
 
         public void nextResize() {
@@ -234,7 +234,7 @@ public class JGameLib extends View {
                 nextH = endH;
                 if(listener != null) listener.onResizeEnded(this);
             }
-            resize(this, nextW, nextH);
+            resize(nextW, nextH);
         }
 
         public void nextAnimation() {
@@ -256,6 +256,81 @@ public class JGameLib extends View {
 
         public void loadBmp() {
             bmp = loadBitmap(resids, idx);
+        }
+
+        public void move(double l, double t) {
+            float width = this.dstRect.width(), height = this.dstRect.height();
+            this.dstRect.left = (float)l;
+            this.dstRect.top = (float)t;
+            this.dstRect.right = (float)l + width;
+            this.dstRect.bottom = (float)t + height;
+            needDraw = true;
+        }
+
+        public void move(double l, double t, double time) {
+            this.endL = (float)l;
+            this.endT = (float)t;
+            float frames = (float)framesOfTime(time);
+            if(frames != 0) {
+                this.unitL = (this.endL - this.dstRect.left) / frames;
+                this.unitT = (this.endT - this.dstRect.top) / frames;
+            } else {
+                this.unitL = 0;
+                this.unitT = 0;
+            }
+            needDraw = true;
+        }
+
+        public void moveRelative(double gapH, double gapV) {
+            move(this.dstRect.left+(float)gapH, this.dstRect.top+(float)gapV);
+        }
+
+        public void moveRelative(double gapH, double gapV, double time) {
+            move(this.dstRect.left+(float)gapH, this.dstRect.top+(float)gapV, time);
+        }
+
+        public void resize(double width, double height) {
+            this.dstRect.left = this.dstRect.centerX() - (float)(width / 2.);
+            this.dstRect.right = this.dstRect.left + (float)width;
+            this.dstRect.top = this.dstRect.centerY() - (float)(height / 2.);
+            this.dstRect.bottom = this.dstRect.top + (float)height;
+            needDraw = true;
+        }
+
+        public void resize(double width, double height, double time) {
+            this.endW = (float)width;
+            this.endH = (float)height;
+            float frames = (float)framesOfTime(time);
+            if(frames != 0) {
+                this.unitW = (this.endW - this.dstRect.width()) / frames;
+                this.unitH = (this.endH - this.dstRect.height()) / frames;
+            } else {
+                this.unitW = 0;
+                this.unitH = 0;
+            }
+            needDraw = true;
+        }
+
+        public void animation(double time) {
+            if(this.resids.isEmpty()) return;
+            animation(0, this.resids.size()-1, time);
+        }
+
+        public void animation(int start, int end, double time) {
+            if(this.resids.isEmpty()) return;
+            this.idx = start;
+            this.endIdx = end;
+            double frames = framesOfTime(time);
+            if(frames != 0)
+                this.unitIdx = (double)(end - start) / frames;
+            else
+                this.unitIdx = 0;
+            this.loadBmp();
+            needDraw = true;
+        }
+
+        public void setImageIndex(int idx) {
+            animation(idx, idx, 0);
         }
     }
 
@@ -279,81 +354,6 @@ public class JGameLib extends View {
         Image img = addImage(resid);
         img.dstRect = new RectF((float)l, (float)t, (float)(l + w), (float)(t + h));
         return img;
-    }
-
-    public void move(Image img, double l, double t) {
-        float width = img.dstRect.width(), height = img.dstRect.height();
-        img.dstRect.left = (float)l;
-        img.dstRect.top = (float)t;
-        img.dstRect.right = (float)l + width;
-        img.dstRect.bottom = (float)t + height;
-        needDraw = true;
-    }
-
-    public void move(Image img, double l, double t, double time) {
-        img.endL = (float)l;
-        img.endT = (float)t;
-        float frames = (float)framesOfTime(time);
-        if(frames != 0) {
-            img.unitL = (img.endL - img.dstRect.left) / frames;
-            img.unitT = (img.endT - img.dstRect.top) / frames;
-        } else {
-            img.unitL = 0;
-            img.unitT = 0;
-        }
-        needDraw = true;
-    }
-
-    public void moveRelative(Image img, double gapH, double gapV) {
-        move(img, img.dstRect.left+(float)gapH, img.dstRect.top+(float)gapV);
-    }
-
-    public void moveRelative(Image img, double gapH, double gapV, double time) {
-        move(img, img.dstRect.left+(float)gapH, img.dstRect.top+(float)gapV, time);
-    }
-
-    public void resize(Image img, double width, double height) {
-        img.dstRect.left = img.dstRect.centerX() - (float)(width / 2.);
-        img.dstRect.right = img.dstRect.left + (float)width;
-        img.dstRect.top = img.dstRect.centerY() - (float)(height / 2.);
-        img.dstRect.bottom = img.dstRect.top + (float)height;
-        needDraw = true;
-    }
-
-    public void resize(Image img, double width, double height, double time) {
-        img.endW = (float)width;
-        img.endH = (float)height;
-        float frames = (float)framesOfTime(time);
-        if(frames != 0) {
-            img.unitW = (img.endW - img.dstRect.width()) / frames;
-            img.unitH = (img.endH - img.dstRect.height()) / frames;
-        } else {
-            img.unitW = 0;
-            img.unitH = 0;
-        }
-        needDraw = true;
-    }
-
-    public void animation(Image img, double time) {
-        if(img.resids.isEmpty()) return;
-        animation(img, 0, img.resids.size()-1, time);
-    }
-
-    public void animation(Image img, int start, int end, double time) {
-        if(img.resids.isEmpty()) return;
-        img.idx = start;
-        img.endIdx = end;
-        double frames = framesOfTime(time);
-        if(frames != 0)
-            img.unitIdx = (double)(end - start) / frames;
-        else
-            img.unitIdx = 0;
-        img.loadBmp();
-        needDraw = true;
-    }
-
-    public void setImageIndex(Image img, int idx) {
-        animation(img, idx, idx, 0);
     }
 
     public double framesOfTime(double time) {
