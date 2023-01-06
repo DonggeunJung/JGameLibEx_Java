@@ -1,3 +1,6 @@
+/* JGameLib_Java : 2D Game library for education      */
+/* Author : Dennis (Donggeun Jung)                    */
+/* Contact : topsan72@gmail.com                       */
 package com.example.jgamelibex;
 
 import android.content.Context;
