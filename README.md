@@ -17,6 +17,9 @@
 6. Play Background music
 7. Play Audio Beep effect
 
+The Game library file name is 'JGameLib.java'.
+Watch 'MainActivity.java' file for your reference.
+
 
 < Additional Infomation >
 
