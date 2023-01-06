@@ -121,10 +121,10 @@ public class JGameLib extends View {
 
     private RectF getRect(Image img) {
         RectF rect = new RectF();
-        rect.left = scrRect.left + img.left * blockSize;
-        rect.right = rect.left + img.width * blockSize;
-        rect.top = scrRect.top + img.top * blockSize;
-        rect.bottom = rect.top + img.height * blockSize;
+        rect.left = scrRect.left + img.dstRect.left * blockSize;
+        rect.right = scrRect.left + img.dstRect.right * blockSize;
+        rect.top = scrRect.top + img.dstRect.top * blockSize;
+        rect.bottom = scrRect.top + img.dstRect.bottom * blockSize;
         return rect;
     }
 
@@ -151,36 +151,49 @@ public class JGameLib extends View {
         return null;
     }
 
+    Bitmap loadBitmap(ArrayList<Integer> resids, double idx) {
+        if(resids.isEmpty() || (int)idx >= resids.size()) return null;
+        int resid = resids.get((int)idx);
+        return getBitmap(resid);
+    }
+
     // Inside Class start ====================================
 
     class Image {
-        Image(int resid, double l, double t, double w, double h) {
-            idx = 0;
-            left = (float)l; top = (float)t;
-            width = (float)w; height = (float)h;
-            resources.add(resid);
-            loadBitmap();
-        }
-
-        ArrayList<Integer> resources = new ArrayList();
+        ArrayList<Integer> resids = new ArrayList();
+        Bitmap bmp;
         double idx = 0;
         double unitIdx = 0, endIdx = 0;
-        float left, top;
+        RectF dstRect = null;
         float unitL=0, unitT=0;
         float endL, endT;
-        float width, height;
         float unitW=0, unitH=0;
         float endW, endH;
+        Rect srcRect = null;
         boolean visible = true;
-        Bitmap bmp;
+
+        Image(int resid) {
+            this(resid, 0, 0, blocksW, blocksH);
+        }
+
+        Image(int resid, double l, double t, double w, double h) {
+            idx = 0;
+            dstRect = new RectF((float)l, (float)t, (float)(l + w), (float)(t + h));
+            resids.add(resid);
+            loadBmp();
+        }
+
+        public void srcRect(Rect rect) {
+            srcRect = rect;
+        }
 
         public void addResource(int resid) {
-            resources.add(resid);
+            resids.add(resid);
         }
 
         public void removeResource(int idx) {
-            if(idx >= resources.size()) return;
-            resources.remove(idx);
+            if(idx >= resids.size()) return;
+            resids.remove(idx);
         }
 
         public void visible(boolean s) {
@@ -189,59 +202,59 @@ public class JGameLib extends View {
         }
 
         public void next() {
-            nextResize();
             nextMove();
+            nextResize();
             nextAnimation();
-        }
-
-        public void nextResize() {
-            if(unitW == 0 && unitH == 0) return;
-            width += unitW;
-            height += unitH;
-            if((unitW != 0 && Math.min(width,width-unitW) <= endW && endW <= Math.max(width,width-unitW))
-                    || (unitH != 0 && Math.min(height,height-unitH) <= endH && endH <= Math.max(height,height-unitH))) {
-                unitW = unitH = 0;
-                width = endW;
-                height = endH;
-                if(listener != null) listener.onResizeEnded(this);
-            }
-            needDraw = true;
         }
 
         public void nextMove() {
             if(unitL == 0 && unitT == 0) return;
-            left += unitL;
-            top += unitT;
-            if((unitL != 0 && Math.min(left,left-unitL) <= endL && endL <= Math.max(left,left-unitL))
-                    || (unitT != 0 && Math.min(top,top-unitT) <= endT && endT <= Math.max(top,top-unitT))) {
-                unitL = 0;
-                unitT = 0;
-                left = endL;
-                top = endT;
+            float currL = dstRect.left, currT = dstRect.top;
+            float nextL = currL + unitL, nextT = currT + unitT;
+
+            if((unitL != 0 && Math.min(currL,nextL) <= endL && endL <= Math.max(currL,nextL))
+                    || (unitT != 0 && Math.min(currT,nextT) <= endT && endT <= Math.max(currT,nextT))) {
+                unitL = unitT = 0;
+                nextL = endL;
+                nextT = endT;
                 if(listener != null) listener.onMoveEnded(this);
             }
-            needDraw = true;
+            move(this, nextL, nextT);
+        }
+
+        public void nextResize() {
+            if(unitW == 0 && unitH == 0) return;
+            float currW = dstRect.width(), currH = dstRect.height();
+            float nextW = currW + unitW, nextH = currH + unitH;
+            if((unitW != 0 && Math.min(currW,nextW) <= endW && endW <= Math.max(currW,nextW))
+                    || (unitH != 0 && Math.min(currW,nextW) <= endH && endH <= Math.max(currW,nextW))) {
+                unitW = unitH = 0;
+                nextW = endW;
+                nextH = endH;
+                if(listener != null) listener.onResizeEnded(this);
+            }
+            resize(this, nextW, nextH);
         }
 
         public void nextAnimation() {
             if(unitIdx == 0) return;
-            double nextIdx = idx + unitIdx;
-            if(nextIdx > endIdx || nextIdx >= resources.size()) {
+            double curridx = idx;
+            double nextIdx = curridx + unitIdx;
+            if(nextIdx >= endIdx || nextIdx >= resids.size()-1) {
                 unitIdx = 0;
-                nextIdx = Math.min(endIdx, resources.size()-1);
-                if(listener != null) listener.onAnimationEnded(this);
-            }
-            if((int)nextIdx > (int)idx) {
-                loadBitmap();
+                nextIdx = Math.min((int)endIdx, resids.size()-1);
             }
             idx = nextIdx;
+            if((int)nextIdx > (int)curridx) {
+                loadBmp();
+            }
+            if(unitIdx == 0 && listener != null)
+                listener.onAnimationEnded(this);
             needDraw = true;
         }
 
-        public void loadBitmap() {
-            if(resources.isEmpty() || idx >= resources.size()) return;
-            int resid = resources.get((int)idx);
-            bmp = getBitmap(resid);
+        public void loadBmp() {
+            bmp = loadBitmap(resids, idx);
         }
     }
 
@@ -268,8 +281,11 @@ public class JGameLib extends View {
     }
 
     public void move(Image img, double l, double t) {
-        img.left = (float)l;
-        img.top = (float)t;
+        float width = img.dstRect.width(), height = img.dstRect.height();
+        img.dstRect.left = (float)l;
+        img.dstRect.top = (float)t;
+        img.dstRect.right = (float)l + width;
+        img.dstRect.bottom = (float)t + height;
         needDraw = true;
     }
 
@@ -277,37 +293,44 @@ public class JGameLib extends View {
         img.endL = (float)l;
         img.endT = (float)t;
         float frames = (float)framesOfTime(time);
-        img.unitL = (img.endL - img.left) / frames;
-        img.unitT = (img.endT - img.top) / frames;
+        if(frames != 0) {
+            img.unitL = (img.endL - img.dstRect.left) / frames;
+            img.unitT = (img.endT - img.dstRect.top) / frames;
+        } else {
+            img.unitL = 0;
+            img.unitT = 0;
+        }
         needDraw = true;
     }
 
     public void moveRelative(Image img, double gapH, double gapV) {
-        move(img, img.left+(float)gapH, img.top+(float)gapV);
+        move(img, img.dstRect.left+(float)gapH, img.dstRect.top+(float)gapV);
     }
 
     public void moveRelative(Image img, double gapH, double gapV, double time) {
-        move(img, img.left+(float)gapH, img.top+(float)gapV, time);
+        move(img, img.dstRect.left+(float)gapH, img.dstRect.top+(float)gapV, time);
     }
 
-    public void resize(Image img, double w, double h) {
-        img.width = (float)w;
-        img.height = (float)h;
+    public void resize(Image img, double width, double height) {
+        img.dstRect.left = img.dstRect.centerX() - (float)(width / 2.);
+        img.dstRect.right = img.dstRect.left + (float)width;
+        img.dstRect.top = img.dstRect.centerY() - (float)(height / 2.);
+        img.dstRect.bottom = img.dstRect.top + (float)height;
         needDraw = true;
     }
 
-    public void resize(Image img, double w, double h, double time) {
-        img.endW = (float)w;
-        img.endH = (float)h;
+    public void resize(Image img, double width, double height, double time) {
+        img.endW = (float)width;
+        img.endH = (float)height;
         float frames = (float)framesOfTime(time);
-        img.unitW = (img.endW - img.width) / frames;
-        img.unitH = (img.endH - img.height) / frames;
-
-        float centerH = img.left + (img.width / 2f);
-        float endL = centerH - (img.endW / 2f);
-        float centerV = img.top + (img.height / 2f);
-        float endT = centerV - (img.endH / 2f);
-        move(img, endL, endT, time);
+        if(frames != 0) {
+            img.unitW = (img.endW - img.dstRect.width()) / frames;
+            img.unitH = (img.endH - img.dstRect.height()) / frames;
+        } else {
+            img.unitW = 0;
+            img.unitH = 0;
+        }
+        needDraw = true;
     }
 
     public void addResource(Image img, int resid) {
@@ -319,17 +342,20 @@ public class JGameLib extends View {
     }
 
     public void animation(Image img, double time) {
-        if(img.resources.isEmpty()) return;
-        animation(img, 0, img.resources.size()-1, time);
+        if(img.resids.isEmpty()) return;
+        animation(img, 0, img.resids.size()-1, time);
     }
 
     public void animation(Image img, int start, int end, double time) {
-        if(img.resources.isEmpty()) return;
+        if(img.resids.isEmpty()) return;
         img.idx = start;
         img.endIdx = end;
         double frames = framesOfTime(time);
-        img.unitIdx = (double)(end - start) / frames;
-        img.loadBitmap();
+        if(frames != 0)
+            img.unitIdx = (double)(end - start) / frames;
+        else
+            img.unitIdx = 0;
+        img.loadBmp();
         needDraw = true;
     }
 
@@ -344,8 +370,8 @@ public class JGameLib extends View {
 
     public void deleteImageResources(Image img) {
         if(images.contains(img)) {
-            for(int i = img.resources.size()-1; i >= 0; i--) {
-                img.resources.remove(i);
+            for(int i = img.resids.size()-1; i >= 0; i--) {
+                img.resids.remove(i);
             }
         }
     }
