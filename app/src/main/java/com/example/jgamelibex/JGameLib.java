@@ -19,6 +19,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import java.util.ArrayList;
 
 public class JGameLib extends View {
@@ -83,7 +84,7 @@ public class JGameLib extends View {
 
         for(Card card : cards) {
             if(!card.visible) continue;
-            RectF rect = null;
+            RectF rect = screenRect;
             if(card.dstRect != null) {
                 rect = getDstRect(card);
             }
@@ -105,8 +106,6 @@ public class JGameLib extends View {
 
     void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp, RectF rectDst, RectF rectSrc) {
         if(bmp == null) return;
-        if(rectDst == null)
-            rectDst = screenRect;
         if(rectSrc == null) {
             canvas.drawBitmap(bmp, null, rectDst, pnt);
             return;
@@ -461,6 +460,12 @@ public class JGameLib extends View {
         firstDraw = true;
     }
 
+    public Card addCardColor(int clr) {
+        Card card = new Card(clr, 0);
+        addCard(card);
+        return card;
+    }
+
     public Card addCardColor(int clr, double l, double t, double w, double h) {
         Card card = new Card(clr, 0);
         addCard(card, l, t, w, h);
@@ -502,6 +507,17 @@ public class JGameLib extends View {
             card.deleteAllImages();
             cards.remove(i);
         }
+    }
+
+    public void popupDialog(String title, String description, String btnText1) {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(getContext());
+        if(title != null && !title.isEmpty())
+            dialog.setTitle(title);
+        if(description != null && !description.isEmpty())
+            dialog.setMessage(description);
+        if(btnText1 != null && !btnText1.isEmpty())
+            dialog.setPositiveButton("Close", null);
+        dialog.show();
     }
 
     // API end ====================================
@@ -553,12 +569,12 @@ public class JGameLib extends View {
         }
         soundId = soundPool.load(this.getContext(), resid,1);
         soundPool.setOnLoadCompleteListener(
-            new SoundPool.OnLoadCompleteListener() {
-                @Override
-                public void onLoadComplete(SoundPool soundPool, int id, int status) {
-                    soundPool.play(id, 1, 1, 1, 0, 1f);
+                new SoundPool.OnLoadCompleteListener() {
+                    @Override
+                    public void onLoadComplete(SoundPool soundPool, int id, int status) {
+                        soundPool.play(id, 1, 1, 1, 0, 1f);
+                    }
                 }
-            }
         );
     }
 
