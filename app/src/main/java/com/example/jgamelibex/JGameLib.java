@@ -23,10 +23,10 @@ import java.util.ArrayList;
 
 public class JGameLib extends View {
     boolean firstDraw = true;
-    float pixelsW = 480, pixelsH = 800;
+    float totalPixelW = 480, totalPixelH = 800;
     float blocksW = 480, blocksH = 800;
+    float blockSize = totalPixelH / blocksH;
     RectF screenRect;
-    float blockSize = pixelsH / blocksH;
     int timerGap = 50;
     boolean needDraw = false;
     ArrayList<Card> cards = new ArrayList();
@@ -39,28 +39,29 @@ public class JGameLib extends View {
     }
 
     void init(Canvas canvas) {
-        pixelsW = canvas.getWidth();
-        pixelsH = canvas.getHeight();
+        totalPixelW = canvas.getWidth();
+        totalPixelH = canvas.getHeight();
         screenRect = getScreenRect();
         blockSize = screenRect.width() / blocksW;
+        timer.removeMessages(0);
         timer.sendEmptyMessageDelayed(0, timerGap);
     }
 
     RectF getScreenRect() {
-        float pixelsRatio = pixelsW / pixelsH;
+        float pixelsRatio = totalPixelW / totalPixelH;
         float blocksRatio = blocksW / blocksH;
         RectF rect = new RectF();
         if(pixelsRatio > blocksRatio) {
             rect.top = 0;
-            rect.bottom = pixelsH;
-            float screenW = pixelsH * blocksRatio;
-            rect.left = (pixelsW - screenW) / 2.f;
+            rect.bottom = totalPixelH;
+            float screenW = totalPixelH * blocksRatio;
+            rect.left = (totalPixelW - screenW) / 2.f;
             rect.right = rect.left + screenW;
         } else {
             rect.left = 0;
-            rect.right = pixelsW;
-            float screenH = pixelsW / blocksRatio;
-            rect.top = (pixelsH - screenH) / 2.f;
+            rect.right = totalPixelW;
+            float screenH = totalPixelW / blocksRatio;
+            rect.top = (totalPixelH - screenH) / 2.f;
             rect.bottom = rect.top + screenH;
         }
         return rect;
@@ -84,10 +85,22 @@ public class JGameLib extends View {
             if(!card.visible) continue;
             RectF rect = null;
             if(card.dstRect != null) {
-                rect = getRect(card);
+                rect = getDstRect(card);
             }
-            drawBitmap(canvas, pnt, card.bmp, rect, card.srcRect);
+            switch(card.backType) {
+                case 0 : {
+                    drawRect(canvas, pnt, card.backColor, rect);
+                }
+                case 1 : {
+                    drawBitmap(canvas, pnt, card.bmp, rect, card.srcRect);
+                }
+            }
         }
+    }
+
+    void drawRect(Canvas canvas, Paint pnt, int color, RectF rectDst) {
+        pnt.setColor(color);
+        canvas.drawRect(rectDst, pnt);
     }
 
     void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp, RectF rectDst, RectF rectSrc) {
@@ -98,12 +111,12 @@ public class JGameLib extends View {
             canvas.drawBitmap(bmp, null, rectDst, pnt);
             return;
         }
-        float pixelW = bmp.getWidth();
-        float pixelH = bmp.getHeight();
-        float areaL = rectSrc.left / 100f * pixelW;
-        float areaR = rectSrc.right / 100f * pixelW;
-        float areaT = rectSrc.top / 100f * pixelH;
-        float areaB = rectSrc.bottom / 100f * pixelH;
+        float bmpPixelW = bmp.getWidth();
+        float bmpPixelH = bmp.getHeight();
+        float areaL = rectSrc.left / 100f * bmpPixelW;
+        float areaR = rectSrc.right / 100f * bmpPixelW;
+        float areaT = rectSrc.top / 100f * bmpPixelH;
+        float areaB = rectSrc.bottom / 100f * bmpPixelH;
         Rect area = new Rect((int)areaL, (int)areaT, (int)areaR, (int)areaB);
         canvas.drawBitmap(bmp, area, rectDst, pnt);
     }
@@ -122,7 +135,7 @@ public class JGameLib extends View {
         }
     });
 
-    private RectF getRect(Card card) {
+    private RectF getDstRect(Card card) {
         RectF rect = new RectF(0,0,0,0);
         if(card.dstRect == null) return rect;
         rect.left = screenRect.left + card.dstRect.left * blockSize;
@@ -147,7 +160,7 @@ public class JGameLib extends View {
     Card findCard(float pixelX, float pixelY) {
         for(Card card : cards) {
             if(!card.visible) continue;
-            RectF rect = getRect(card);
+            RectF rect = getDstRect(card);
             if(rect.contains(pixelX, pixelY)) {
                 return card;
             }
@@ -156,7 +169,8 @@ public class JGameLib extends View {
     }
 
     Bitmap loadBitmap(ArrayList<Integer> resids, double idx) {
-        if(resids.isEmpty() || (int)idx >= resids.size()) return null;
+        if(resids.isEmpty() || (int)idx < 0 || (int)idx >= resids.size())
+            return null;
         int resid = resids.get((int)idx);
         return getBitmap(resid);
     }
@@ -174,7 +188,7 @@ public class JGameLib extends View {
     class Card {
         ArrayList<Integer> resids = new ArrayList();
         Bitmap bmp;
-        double idx = 0;
+        double idx = -1;
         double unitIdx = 0, endIdx = 0;
         RectF dstRect = null;
         float unitL=0, unitT=0;
@@ -185,6 +199,13 @@ public class JGameLib extends View {
         float unitSrcL=0, unitSrcT=0;
         float endSrcL, endSrcT;
         boolean visible = true;
+        int backColor = 0x00000000;
+        int backType = 1;
+
+        Card(int clr, int type) {
+            backType = type;
+            this.backColor = clr;
+        }
 
         Card(int resid) {
             resids.add(resid);
@@ -357,17 +378,17 @@ public class JGameLib extends View {
             moving(this.dstRect.left+(float)gapH, this.dstRect.top+(float)gapV, time);
         }
 
-        public void resize(double width, double height) {
-            this.dstRect.left = this.dstRect.centerX() - (float)(width / 2.);
-            this.dstRect.right = this.dstRect.left + (float)width;
-            this.dstRect.top = this.dstRect.centerY() - (float)(height / 2.);
-            this.dstRect.bottom = this.dstRect.top + (float)height;
+        public void resize(double w, double h) {
+            this.dstRect.left = this.dstRect.centerX() - (float)(w / 2.);
+            this.dstRect.right = this.dstRect.left + (float)w;
+            this.dstRect.top = this.dstRect.centerY() - (float)(h / 2.);
+            this.dstRect.bottom = this.dstRect.top + (float)h;
             needDraw = true;
         }
 
-        public void resizing(double width, double height, double time) {
-            this.endW = (float)width;
-            this.endH = (float)height;
+        public void resizing(double w, double h, double time) {
+            this.endW = (float)w;
+            this.endH = (float)h;
             float frames = (float)framesOfTime(time);
             if(frames != 0) {
                 this.unitW = (this.endW - this.dstRect.width()) / frames;
@@ -434,22 +455,38 @@ public class JGameLib extends View {
 
     // API start ====================================
 
-    public void setScreenAxis(float width, float height) {
-        blocksW = width;
-        blocksH = height;
+    public void setScreenGrid(float w, float h) {
+        blocksW = w;
+        blocksH = h;
+        firstDraw = true;
+    }
+
+    public Card addCardColor(int clr, double l, double t, double w, double h) {
+        Card card = new Card(clr, 0);
+        addCard(card, l, t, w, h);
+        return card;
     }
 
     public Card addCard(int resid)  {
         Card card = new Card(resid);
-        cards.add(card);
-        needDraw = true;
+        addCard(card);
         return card;
     }
 
-    public Card addCard(int resid, double l, double t, double w, double h)  {
-        Card card = addCard(resid);
-        card.dstRect = new RectF((float)l, (float)t, (float)(l + w), (float)(t + h));
+    public Card addCard(int resid, double l, double t, double w, double h) {
+        Card card = new Card(resid);
+        addCard(card, l, t, w, h);
         return card;
+    }
+
+    public void addCard(Card card, double l, double t, double w, double h) {
+        addCard(card);
+        card.dstRect = new RectF((float)l, (float)t, (float)(l + w), (float)(t + h));
+    }
+
+    public void addCard(Card card) {
+        cards.add(card);
+        needDraw = true;
     }
 
     public double framesOfTime(double time) {

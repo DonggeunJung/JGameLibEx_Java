@@ -1,14 +1,16 @@
 package com.example.jgamelibex;
 
 import androidx.appcompat.app.AppCompatActivity;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
 
 public class MainActivity extends AppCompatActivity implements JGameLib.GameEvent {
     JGameLib gameLib = null;
-    JGameLib.Card cardHeart;
     JGameLib.Card gameBackground;
+    JGameLib.Card colorCard;
+    JGameLib.Card cardHeart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,10 +29,11 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     }
 
     private void initGame() {
-        gameLib.setScreenAxis(100,140);
+        gameLib.setScreenGrid(100,140);
         gameLib.listener(this);
         gameBackground = gameLib.addCard(R.drawable.anipang_standby);
         gameBackground.addImage(R.drawable.scroll_back_woods);
+        colorCard = gameLib.addCardColor(Color.rgb(255,240,240), 80,110,20,20);
         cardHeart = gameLib.addCard(R.drawable.icon_heart1, 34, 12, 9, 6);
         cardHeart.addImage(R.drawable.progressing00);
         cardHeart.addImage(R.drawable.progressing01);
