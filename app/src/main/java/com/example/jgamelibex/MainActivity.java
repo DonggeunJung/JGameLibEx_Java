@@ -61,34 +61,41 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     // Game Event start ====================================
 
     @Override
-    public void onMoveEnded(JGameLib.Image img) {
-        if(img == imgHeart) {
-            imgHeart.resize(25, 25, 0.8);
-            gameLib.playAudioBeep(R.raw.fireworks_fire);
+    public void onGameWorkEnded(JGameLib.Image img, JGameLib.WorkType workType) {
+        switch(workType) {
+            case AUDIO_PLAY: {
+                break;
+            }
+            case MOVE: {
+                if(img == imgHeart) {
+                    imgHeart.resize(25, 25, 0.8);
+                    gameLib.playAudioBeep(R.raw.fireworks_fire);
+                }
+                break;
+            }
+            case RESIZE: {
+                if(img == imgHeart) {
+                    imgHeart.animation(1, 8, 1);
+                    gameLib.playAudioBeep(R.raw.fireworks_boom);
+                }
+                break;
+            }
+            case ANIMATION: {
+                if(img == imgHeart) {
+                    imgHeart.setImageIndex(0);
+                    imgHeart.resize(9, 6);
+                    imgHeart.move(34, 12);
+                }
+                break;
+            }
+            case SOURCE_AREA: {
+                if(img == gameBackground) {
+                    gameBackground.sourceArea(0, 0, 30, 100);
+                    gameBackground.sourceArea(70, 0, 4);
+                }
+                break;
+            }
         }
-    }
-
-    @Override
-    public void onResizeEnded(JGameLib.Image img) {
-        if(img == imgHeart) {
-            imgHeart.animation(1, 8, 1);
-            gameLib.playAudioBeep(R.raw.fireworks_boom);
-        }
-    }
-
-    @Override
-    public void onAnimationEnded(JGameLib.Image img) {
-        if(img == imgHeart) {
-            imgHeart.setImageIndex(0);
-            imgHeart.resize(9, 6);
-            imgHeart.move(34, 12);
-        }
-    }
-
-    @Override
-    public void onSourceAreaEnded(JGameLib.Image img) {
-        gameBackground.sourceArea(0, 0, 30, 100);
-        gameBackground.sourceArea(70, 0, 4);
     }
 
     @Override
@@ -97,9 +104,6 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
             img.moveRelative(blockX, blockY);
         }
     }
-
-    @Override
-    public void onAudioCompletion(int resid) {}
 
     // Game Event end ====================================
 

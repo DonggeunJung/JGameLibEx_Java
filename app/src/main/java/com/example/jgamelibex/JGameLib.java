@@ -213,7 +213,7 @@ public class JGameLib extends View {
             }
             move(nextL, nextT);
             if(unitL == 0 && unitT == 0 && listener != null)
-                listener.onMoveEnded(this);
+                listener.onGameWorkEnded(this, WorkType.MOVE);
         }
 
         void nextResize() {
@@ -228,7 +228,7 @@ public class JGameLib extends View {
             }
             resize(nextW, nextH);
             if(unitW == 0 && unitH == 0 && listener != null)
-                listener.onResizeEnded(this);
+                listener.onGameWorkEnded(this, WorkType.RESIZE);
         }
 
         void nextAnimation() {
@@ -244,7 +244,7 @@ public class JGameLib extends View {
                 loadBmp();
             }
             if(unitIdx == 0 && listener != null)
-                listener.onAnimationEnded(this);
+                listener.onGameWorkEnded(this, WorkType.ANIMATION);
             needDraw = true;
         }
 
@@ -261,7 +261,7 @@ public class JGameLib extends View {
             }
             sourceArea(nextL, nextT, srcRect.width(), srcRect.height());
             if(unitSrcL == 0 && unitSrcT == 0 && listener != null)
-                listener.onSourceAreaEnded(this);
+                listener.onGameWorkEnded(this, WorkType.SOURCE_AREA);
         }
 
         // Image API start ====================================
@@ -384,7 +384,6 @@ public class JGameLib extends View {
         }
 
         public void deleteImageResources() {
-            //if(img == null) return;
             for(int i = this.resids.size()-1; i >= 0; i--) {
                 this.resids.remove(i);
             }
@@ -427,29 +426,11 @@ public class JGameLib extends View {
         for(int i = images.size()-1; i >= 0; i--) {
             Image img = images.get(i);
             img.deleteImageResources();
-            //deleteImageResources(img);
             images.remove(i);
         }
     }
 
     // API end ====================================
-
-    // Interface start ====================================
-
-    private GameEvent listener = null;
-
-    public void listener(GameEvent lsn) { listener = lsn; }
-
-    interface GameEvent {
-        void onMoveEnded(Image img);
-        void onResizeEnded(Image img);
-        void onAnimationEnded(Image img);
-        void onSourceAreaEnded(Image img);
-        void onGameTouchEvent(Image img, int action, float blockX, float blockY);
-        void onAudioCompletion(int resid);
-    }
-
-    // Interface end ====================================
 
     // Event start ====================================
 
@@ -526,7 +507,7 @@ public class JGameLib extends View {
                     playBGM();
                 }
                 if(listener != null)
-                    listener.onAudioCompletion(audioSourceId);
+                    listener.onGameWorkEnded(null, WorkType.AUDIO_PLAY);
             }
         });
     }
@@ -562,5 +543,22 @@ public class JGameLib extends View {
     }
 
     // Audio play end ====================================
+
+    // Interface start ====================================
+
+    private GameEvent listener = null;
+
+    public void listener(GameEvent lsn) { listener = lsn; }
+
+    interface GameEvent {
+        void onGameWorkEnded(Image img, WorkType workType);
+        void onGameTouchEvent(Image img, int action, float blockX, float blockY);
+    }
+
+    public enum WorkType {
+        AUDIO_PLAY, MOVE, RESIZE, ANIMATION, SOURCE_AREA
+    }
+
+    // Interface end ====================================
 
 }
