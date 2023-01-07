@@ -23,6 +23,6 @@ Watch 'MainActivity.java' file for your reference.
 
 < Additional Infomation >
 
-GitHub Link : https://github.com/DonggeunJung/SimpleMvvmDaggerKotlin
+GitHub Link : https://github.com/DonggeunJung/JGameLibEx_Java
 
 Any question => Email : topsan72@gmail.com / Author : Donggeun Jung (Dennis)
