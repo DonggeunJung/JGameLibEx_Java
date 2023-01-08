@@ -15,6 +15,7 @@ import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.os.Handler;
 import android.os.Message;
+import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -518,6 +519,16 @@ public class JGameLib extends View {
         if(btnText1 != null && !btnText1.isEmpty())
             dialog.setPositiveButton("Close", null);
         dialog.show();
+    }
+
+    Vibrator vibrator;
+
+    // To use Vibrator add below Permission into AndroidManifest.xml
+    // <uses-permission android:name="android.permission.VIBRATE"/>
+    public void vibrate(double second) {
+        if(vibrator == null)
+            vibrator = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+        vibrator.vibrate((int)(second * 1000));
     }
 
     // API end ====================================
