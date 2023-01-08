@@ -342,13 +342,21 @@ public class JGameLib extends View implements SensorEventListener {
             bmp = loadBitmap(resids, idx);
         }
 
-        public void move(double l, double t) {
-            float width = this.dstRect.width(), height = this.dstRect.height();
+        public RectF rect() {
+            return this.dstRect;
+        }
+
+        public void rect(double l, double t, double w, double h) {
             this.dstRect.left = (float)l;
             this.dstRect.top = (float)t;
-            this.dstRect.right = (float)l + width;
-            this.dstRect.bottom = (float)t + height;
+            this.dstRect.right = (float)l + (float)w;
+            this.dstRect.bottom = (float)t + (float)h;
             needDraw = true;
+        }
+
+        public void move(double l, double t) {
+            float w = this.dstRect.width(), h = this.dstRect.height();
+            rect(l, t, w, h);
         }
 
         public void moving(double l, double t, double time) {
@@ -374,12 +382,20 @@ public class JGameLib extends View implements SensorEventListener {
             return unitL != 0 || unitT != 0;
         }
 
-        public void moveRelative(double gapH, double gapV) {
-            move(this.dstRect.left+(float)gapH, this.dstRect.top+(float)gapV);
+        public void rectGap(double gapL, double gapT, double gapW, double gapH) {
+            this.dstRect.left += (float)(gapL);
+            this.dstRect.right += (float)(gapL + gapW);
+            this.dstRect.top += (float)(gapT);
+            this.dstRect.bottom += (float)(gapT + gapH);
+            needDraw = true;
         }
 
-        public void moveRelative(double gapH, double gapV, double time) {
-            moving(this.dstRect.left+(float)gapH, this.dstRect.top+(float)gapV, time);
+        public void moveGap(double gapL, double gapT) {
+            move(this.dstRect.left+(float)gapL, this.dstRect.top+(float)gapT);
+        }
+
+        public void moveGap(double gapL, double gapT, double time) {
+            moving(this.dstRect.left+(float)gapL, this.dstRect.top+(float)gapT, time);
         }
 
         public void resize(double w, double h) {
@@ -402,6 +418,14 @@ public class JGameLib extends View implements SensorEventListener {
                 this.unitH = 0;
             }
             needDraw = true;
+        }
+
+        public void resizeGap(double w, double h) {
+            resize(this.dstRect.width()+w, this.dstRect.height()+h);
+        }
+
+        public void resizingGap(double w, double h, double time) {
+            resizing(this.dstRect.width()+w, this.dstRect.height()+h, time);
         }
 
         public void stopResizing() {
@@ -537,12 +561,17 @@ public class JGameLib extends View implements SensorEventListener {
 
     SensorManager sensorMgr = null;
 
-    public void SensorAccelerometer() {
+    public void startSensorAccelerometer() {
         if(sensorMgr == null)
             sensorMgr = (SensorManager)getContext().getSystemService(Context.SENSOR_SERVICE);
         Sensor sensorAcceler = sensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         if( sensorAcceler != null )
             sensorMgr.registerListener(this, sensorAcceler, SensorManager.SENSOR_DELAY_UI);
+    }
+
+    public void stopSensorAccelerometer() {
+        if(sensorMgr == null) return;
+        sensorMgr.unregisterListener(this);
     }
 
     public void onAccuracyChanged(Sensor sensor, int accuracy) {}

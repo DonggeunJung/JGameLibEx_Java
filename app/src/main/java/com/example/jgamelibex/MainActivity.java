@@ -18,7 +18,6 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         gameLib = findViewById(R.id.gameLib);
-
         initGame();
     }
 
@@ -46,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
         cardHeart.addImage(R.drawable.progressing07);
 
         gameLib.playBGM(R.raw.morning);
-        gameLib.SensorAccelerometer();
+        gameLib.startSensorAccelerometer();
     }
 
     // User Event start ====================================
@@ -110,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     @Override
     public void onGameTouchEvent(JGameLib.Card card, int action, float blockX, float blockY) {
         if(card == cardHeart && action == MotionEvent.ACTION_MOVE) {
-            card.moveRelative(blockX, blockY);
+            card.moveGap(blockX, blockY);
         }
     }
 
@@ -122,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
                 v1 = (cut - Math.abs(x)) * rate;
             if(Math.abs(y) > cut)
                 v2 = (cut - Math.abs(y)) * rate;
-            cardColor.moveRelative(v1, v2);
+            cardColor.moveGap(v1, v2);
         }
     }
 
