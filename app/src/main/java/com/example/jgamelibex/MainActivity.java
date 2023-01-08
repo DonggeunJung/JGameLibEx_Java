@@ -2,6 +2,7 @@ package com.example.jgamelibex;
 
 import androidx.appcompat.app.AppCompatActivity;
 import android.graphics.Color;
+import android.hardware.Sensor;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -9,7 +10,7 @@ import android.view.View;
 public class MainActivity extends AppCompatActivity implements JGameLib.GameEvent {
     JGameLib gameLib = null;
     JGameLib.Card gameBackground;
-    JGameLib.Card colorCard;
+    JGameLib.Card cardColor;
     JGameLib.Card cardHeart;
 
     @Override
@@ -33,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
         gameLib.listener(this);
         gameBackground = gameLib.addCard(R.drawable.anipang_standby);
         gameBackground.addImage(R.drawable.scroll_back_woods);
-        colorCard = gameLib.addCardColor(Color.rgb(255,240,240), 80,110,20,20);
+        cardColor = gameLib.addCardColor(Color.rgb(255,240,240), 80,110,20,20);
         cardHeart = gameLib.addCard(R.drawable.icon_heart1, 34, 12, 9, 6);
         cardHeart.addImage(R.drawable.progressing00);
         cardHeart.addImage(R.drawable.progressing01);
@@ -45,6 +46,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
         cardHeart.addImage(R.drawable.progressing07);
 
         gameLib.playBGM(R.raw.morning);
+        gameLib.SensorAccelerometer();
     }
 
     // User Event start ====================================
@@ -108,7 +110,19 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     @Override
     public void onGameTouchEvent(JGameLib.Card card, int action, float blockX, float blockY) {
         if(card == cardHeart && action == MotionEvent.ACTION_MOVE) {
-            card.relativeMove(blockX, blockY);
+            card.moveRelative(blockX, blockY);
+        }
+    }
+
+    @Override
+    public void onGameSensor(int sensorType, float x, float y, float z) {
+        if(sensorType == Sensor.TYPE_ACCELEROMETER) {
+            float v1 = 0, v2 = 0, cut = 10, rate = 0.2f;
+            if(Math.abs(x) > cut)
+                v1 = (cut - Math.abs(x)) * rate;
+            if(Math.abs(y) > cut)
+                v2 = (cut - Math.abs(y)) * rate;
+            cardColor.moveRelative(v1, v2);
         }
     }
 

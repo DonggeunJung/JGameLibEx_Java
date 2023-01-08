@@ -11,6 +11,10 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.os.Handler;
@@ -23,7 +27,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import java.util.ArrayList;
 
-public class JGameLib extends View {
+public class JGameLib extends View implements SensorEventListener {
     boolean firstDraw = true;
     float totalPixelW = 480, totalPixelH = 800;
     float blocksW = 480, blocksH = 800;
@@ -370,11 +374,11 @@ public class JGameLib extends View {
             return unitL != 0 || unitT != 0;
         }
 
-        public void relativeMove(double gapH, double gapV) {
+        public void moveRelative(double gapH, double gapV) {
             move(this.dstRect.left+(float)gapH, this.dstRect.top+(float)gapV);
         }
 
-        public void relativeMoving(double gapH, double gapV, double time) {
+        public void moveRelative(double gapH, double gapV, double time) {
             moving(this.dstRect.left+(float)gapH, this.dstRect.top+(float)gapV, time);
         }
 
@@ -523,12 +527,35 @@ public class JGameLib extends View {
 
     Vibrator vibrator;
 
-    // To use Vibrator add below Permission into AndroidManifest.xml
+    // To use Vibrator, add below Permission into AndroidManifest.xml
     // <uses-permission android:name="android.permission.VIBRATE"/>
     public void vibrate(double second) {
         if(vibrator == null)
             vibrator = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
         vibrator.vibrate((int)(second * 1000));
+    }
+
+    SensorManager sensorMgr = null;
+
+    public void SensorAccelerometer() {
+        if(sensorMgr == null)
+            sensorMgr = (SensorManager)getContext().getSystemService(Context.SENSOR_SERVICE);
+        Sensor sensorAcceler = sensorMgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        if( sensorAcceler != null )
+            sensorMgr.registerListener(this, sensorAcceler, SensorManager.SENSOR_DELAY_UI);
+    }
+
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+
+    public void onSensorChanged(SensorEvent event) {
+        float v[] = event.values;
+        switch( event.sensor.getType() ) {
+            case Sensor.TYPE_ACCELEROMETER :
+                if(listener != null) {
+                    listener.onGameSensor(Sensor.TYPE_ACCELEROMETER, v[0], v[1], v[2]);
+                }
+                break;
+        }
     }
 
     // API end ====================================
@@ -654,6 +681,7 @@ public class JGameLib extends View {
     interface GameEvent {
         void onGameWorkEnded(Card card, WorkType workType);
         void onGameTouchEvent(Card card, int action, float blockX, float blockY);
+        void onGameSensor(int sensorType, float x, float y, float z);
     }
 
     public enum WorkType {
