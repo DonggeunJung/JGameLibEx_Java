@@ -89,17 +89,18 @@ public class JGameLib extends View implements SensorEventListener {
 
         for(Card card : cards) {
             if(!card.visible) continue;
-            RectF rect = screenRect;
+            RectF scrRect = screenRect;
             if(card.dstRect != null) {
-                rect = getDstRect(card);
+                scrRect = getDstRect(card);
             }
-            switch(card.backType) {
-                case 0 : {
-                    drawRect(canvas, pnt, card.backColor, rect);
+            if(card.backType == 1 && card.bmp != null) {
+                if(card.srcRect == null) {
+                    canvas.drawBitmap(card.bmp, null, scrRect, pnt);
+                } else {
+                    drawBitmap(canvas, pnt, card.bmp, scrRect, card.srcRect);
                 }
-                case 1 : {
-                    drawBitmap(canvas, pnt, card.bmp, rect, card.srcRect);
-                }
+            } else {
+                drawRect(canvas, pnt, card.backColor, scrRect);
             }
         }
     }
@@ -117,12 +118,35 @@ public class JGameLib extends View implements SensorEventListener {
         }
         float bmpPixelW = bmp.getWidth();
         float bmpPixelH = bmp.getHeight();
-        float absoluteRectL = srcRect.left / 100f * bmpPixelW;
-        float absoluteRectR = srcRect.right / 100f * bmpPixelW;
-        float absoluteRectT = srcRect.top / 100f * bmpPixelH;
-        float absoluteRectB = srcRect.bottom / 100f * bmpPixelH;
-        Rect absoluteRect = new Rect((int)absoluteRectL, (int)absoluteRectT, (int)absoluteRectR, (int)absoluteRectB);
-        canvas.drawBitmap(bmp, absoluteRect, dstRect, pnt);
+        float sourceRectL = srcRect.left / 100f * bmpPixelW;
+        float sourceRectR = srcRect.right / 100f * bmpPixelW;
+        float sourceRectT = srcRect.top / 100f * bmpPixelH;
+        float sourceRectB = srcRect.bottom / 100f * bmpPixelH;
+        if(sourceRectL > bmpPixelW || sourceRectT > bmpPixelH) return;
+        Rect sourceRect = new Rect((int)sourceRectL, (int)sourceRectT, (int)sourceRectR, (int)sourceRectB);
+        RectF screenRect = new RectF(dstRect);
+        if(sourceRect.right > bmpPixelW) {
+            sourceRect.right = (int)bmpPixelW;
+            float firstRate = (float)sourceRect.width() / (sourceRectR - sourceRectL);
+            float firstDstWidth = screenRect.width() * firstRate;
+            screenRect.right = screenRect.left + firstDstWidth;
+            sourceRectR -= sourceRect.right;
+            Rect sourceRect2 = new Rect(0, (int)sourceRectT, (int)sourceRectR, (int)sourceRectB);
+            RectF screenRect2 = new RectF(dstRect);
+            screenRect2.left = screenRect.right;
+            canvas.drawBitmap(bmp, sourceRect2, screenRect2, pnt);
+        } else if(sourceRect.bottom > bmpPixelH) {
+            sourceRect.bottom = (int)bmpPixelH;
+            float firstRate = (float)sourceRect.height() / (sourceRectB - sourceRectT);
+            float firstDstHeight = screenRect.height() * firstRate;
+            screenRect.bottom = screenRect.top + firstDstHeight;
+            sourceRectB -= sourceRect.bottom;
+            Rect sourceRect2 = new Rect((int)sourceRectL, 0, (int)sourceRectR, (int)sourceRectB);
+            RectF screenRect2 = new RectF(dstRect);
+            screenRect2.top = screenRect.bottom;
+            canvas.drawBitmap(bmp, sourceRect2, screenRect2, pnt);
+        }
+        canvas.drawBitmap(bmp, sourceRect, screenRect, pnt);
     }
 
     Handler timer = new Handler(new Handler.Callback() {

@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
         } else {
             gameBackground.imageChange(1);
             gameBackground.sourceRect(0, 0, 30, 100);
-            gameBackground.sourceRectIng(70, 0, 4);
+            gameBackground.sourceRectIng(100, 0, 4);
         }
     }
 
@@ -99,7 +99,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
             case SOURCE_RECT: {
                 if(card == gameBackground) {
                     gameBackground.sourceRect(0, 0, 30, 100);
-                    gameBackground.sourceRectIng(70, 0, 4);
+                    gameBackground.sourceRectIng(100, 0, 4);
                 }
                 break;
             }
