@@ -104,25 +104,25 @@ public class JGameLib extends View implements SensorEventListener {
         }
     }
 
-    void drawRect(Canvas canvas, Paint pnt, int color, RectF rectDst) {
+    void drawRect(Canvas canvas, Paint pnt, int color, RectF dstRect) {
         pnt.setColor(color);
-        canvas.drawRect(rectDst, pnt);
+        canvas.drawRect(dstRect, pnt);
     }
 
-    void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp, RectF rectDst, RectF rectSrc) {
+    void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp, RectF dstRect, RectF srcRect) {
         if(bmp == null) return;
-        if(rectSrc == null) {
-            canvas.drawBitmap(bmp, null, rectDst, pnt);
+        if(srcRect == null) {
+            canvas.drawBitmap(bmp, null, dstRect, pnt);
             return;
         }
         float bmpPixelW = bmp.getWidth();
         float bmpPixelH = bmp.getHeight();
-        float areaL = rectSrc.left / 100f * bmpPixelW;
-        float areaR = rectSrc.right / 100f * bmpPixelW;
-        float areaT = rectSrc.top / 100f * bmpPixelH;
-        float areaB = rectSrc.bottom / 100f * bmpPixelH;
-        Rect area = new Rect((int)areaL, (int)areaT, (int)areaR, (int)areaB);
-        canvas.drawBitmap(bmp, area, rectDst, pnt);
+        float absoluteRectL = srcRect.left / 100f * bmpPixelW;
+        float absoluteRectR = srcRect.right / 100f * bmpPixelW;
+        float absoluteRectT = srcRect.top / 100f * bmpPixelH;
+        float absoluteRectB = srcRect.bottom / 100f * bmpPixelH;
+        Rect absoluteRect = new Rect((int)absoluteRectL, (int)absoluteRectT, (int)absoluteRectR, (int)absoluteRectB);
+        canvas.drawBitmap(bmp, absoluteRect, dstRect, pnt);
     }
 
     Handler timer = new Handler(new Handler.Callback() {
@@ -222,7 +222,7 @@ public class JGameLib extends View implements SensorEventListener {
             nextMove();
             nextResize();
             nextAnimation();
-            nextSourceArea();
+            nextSourceRect();
         }
 
         void nextMove() {
@@ -273,7 +273,7 @@ public class JGameLib extends View implements SensorEventListener {
             needDraw = true;
         }
 
-        void nextSourceArea() {
+        void nextSourceRect() {
             if(unitSrcL == 0 && unitSrcT == 0) return;
             float currL = srcRect.left, currT = srcRect.top;
             float nextL = currL + unitSrcL, nextT = currT + unitSrcT;
@@ -284,28 +284,28 @@ public class JGameLib extends View implements SensorEventListener {
                 nextL = endSrcL;
                 nextT = endSrcT;
             }
-            sourceArea(nextL, nextT, srcRect.width(), srcRect.height());
+            sourceRect(nextL, nextT, srcRect.width(), srcRect.height());
             if(unitSrcL == 0 && unitSrcT == 0 && listener != null)
-                listener.onGameWorkEnded(this, WorkType.SOURCE_AREA);
+                listener.onGameWorkEnded(this, WorkType.SOURCE_RECT);
         }
 
         // Card API start ====================================
 
-        public RectF sourceArea() {
+        public RectF sourceRect() {
             return srcRect;
         }
 
-        public void sourceArea(double l, double t, double w, double h) {
+        public void sourceRect(double l, double t, double w, double h) {
             RectF rect = new RectF((float)l, (float)t, (float)(l+w), (float)(t+h));
-            sourceArea(rect);
+            sourceRect(rect);
         }
 
-        public void sourceArea(RectF rect) {
+        public void sourceRect(RectF rect) {
             srcRect = rect;
             needDraw = true;
         }
 
-        public void sourceAreaIng(double l, double t, double time) {
+        public void sourceRectIng(double l, double t, double time) {
             this.endSrcL = (float)l;
             this.endSrcT = (float)t;
             float frames = (float)framesOfTime(time);
@@ -319,12 +319,12 @@ public class JGameLib extends View implements SensorEventListener {
             needDraw = true;
         }
 
-        public void stopSourceAreaIng() {
+        public void stopSourceRectIng() {
             this.unitSrcL = 0;
             this.unitSrcT = 0;
         }
 
-        public boolean isSourceAreaIng() {
+        public boolean isSourceRectIng() {
             return unitSrcL != 0 || unitSrcT != 0;
         }
 
@@ -346,11 +346,11 @@ public class JGameLib extends View implements SensorEventListener {
             bmp = loadBitmap(resids, idx);
         }
 
-        public RectF screenArea() {
+        public RectF screenRect() {
             return this.dstRect;
         }
 
-        public void screenArea(double l, double t, double w, double h) {
+        public void screenRect(double l, double t, double w, double h) {
             this.dstRect.left = (float)l;
             this.dstRect.top = (float)t;
             this.dstRect.right = (float)l + (float)w;
@@ -358,7 +358,7 @@ public class JGameLib extends View implements SensorEventListener {
             needDraw = true;
         }
 
-        public void screenAreaGap(double gapL, double gapT, double gapW, double gapH) {
+        public void screenRectGap(double gapL, double gapT, double gapW, double gapH) {
             this.dstRect.left += (float)(gapL);
             this.dstRect.right += (float)(gapL + gapW);
             this.dstRect.top += (float)(gapT);
@@ -368,7 +368,7 @@ public class JGameLib extends View implements SensorEventListener {
 
         public void move(double l, double t) {
             float w = this.dstRect.width(), h = this.dstRect.height();
-            screenArea(l, t, w, h);
+            screenRect(l, t, w, h);
         }
 
         public void moving(double l, double t, double time) {
@@ -718,7 +718,7 @@ public class JGameLib extends View implements SensorEventListener {
     }
 
     public enum WorkType {
-        AUDIO_PLAY, MOVE, RESIZE, ANIMATION, SOURCE_AREA
+        AUDIO_PLAY, MOVE, RESIZE, ANIMATION, SOURCE_RECT
     }
 
     // Interface end ====================================
