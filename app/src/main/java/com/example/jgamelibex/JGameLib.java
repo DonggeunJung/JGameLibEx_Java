@@ -291,6 +291,10 @@ public class JGameLib extends View implements SensorEventListener {
 
         // Card API start ====================================
 
+        public RectF sourceArea() {
+            return srcRect;
+        }
+
         public void sourceArea(double l, double t, double w, double h) {
             RectF rect = new RectF((float)l, (float)t, (float)(l+w), (float)(t+h));
             sourceArea(rect);
@@ -342,11 +346,11 @@ public class JGameLib extends View implements SensorEventListener {
             bmp = loadBitmap(resids, idx);
         }
 
-        public RectF rect() {
+        public RectF screenArea() {
             return this.dstRect;
         }
 
-        public void rect(double l, double t, double w, double h) {
+        public void screenArea(double l, double t, double w, double h) {
             this.dstRect.left = (float)l;
             this.dstRect.top = (float)t;
             this.dstRect.right = (float)l + (float)w;
@@ -354,9 +358,17 @@ public class JGameLib extends View implements SensorEventListener {
             needDraw = true;
         }
 
+        public void screenAreaGap(double gapL, double gapT, double gapW, double gapH) {
+            this.dstRect.left += (float)(gapL);
+            this.dstRect.right += (float)(gapL + gapW);
+            this.dstRect.top += (float)(gapT);
+            this.dstRect.bottom += (float)(gapT + gapH);
+            needDraw = true;
+        }
+
         public void move(double l, double t) {
             float w = this.dstRect.width(), h = this.dstRect.height();
-            rect(l, t, w, h);
+            screenArea(l, t, w, h);
         }
 
         public void moving(double l, double t, double time) {
@@ -380,14 +392,6 @@ public class JGameLib extends View implements SensorEventListener {
 
         public boolean isMoving() {
             return unitL != 0 || unitT != 0;
-        }
-
-        public void rectGap(double gapL, double gapT, double gapW, double gapH) {
-            this.dstRect.left += (float)(gapL);
-            this.dstRect.right += (float)(gapL + gapW);
-            this.dstRect.top += (float)(gapT);
-            this.dstRect.bottom += (float)(gapT + gapH);
-            needDraw = true;
         }
 
         public void moveGap(double gapL, double gapT) {
