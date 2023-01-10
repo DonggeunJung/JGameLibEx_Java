@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -89,7 +90,8 @@ public class JGameLib extends View implements SensorEventListener {
         pnt.setStyle(Paint.Style.FILL);
         pnt.setAntiAlias(true);
 
-        for(Card card : cards) {
+        for(int i=0; i < cards.size(); i++) {
+            Card card = cards.get(i);
             if(!card.visible) continue;
             RectF scrRect = screenRect;
             if(card.dstRect != null) {
@@ -104,12 +106,33 @@ public class JGameLib extends View implements SensorEventListener {
             } else {
                 drawRect(canvas, pnt, card.backColor, scrRect);
             }
+            if(card.text != null) {
+                drawText(canvas, pnt, scrRect, card);
+            }
+            if(card.checkCollision) {
+                for(int j=i+1; j < cards.size(); j++) {
+                    Card card2 = cards.get(j);
+                    if(!card2.checkCollision) continue;
+                    if(checkCollision(card.dstRect, card2.dstRect)) {
+                        if(listener != null)
+                            listener.onGameCollision(card, card2);
+                    }
+                }
+            }
         }
     }
 
     void drawRect(Canvas canvas, Paint pnt, int color, RectF dstRect) {
         pnt.setColor(color);
         canvas.drawRect(dstRect, pnt);
+    }
+
+    void drawText(Canvas canvas, Paint pnt, RectF dstRect, Card card) {
+        pnt.setTextSize(card.textSize);
+        pnt.setColor(card.textColor);
+        pnt.setTextAlign(Paint.Align.CENTER);
+        float y = dstRect.centerY() + (card.textSize / 3f);
+        canvas.drawText(card.text, dstRect.centerX(), y, pnt);
     }
 
     void drawBitmap(Canvas canvas, Paint pnt, Bitmap bmp, RectF dstRect, RectF srcRect) {
@@ -213,6 +236,13 @@ public class JGameLib extends View implements SensorEventListener {
         return -1;
     }
 
+    boolean checkCollision(RectF rect1, RectF rect2) {
+        if(rect1.top >= rect2.bottom || rect1.bottom <= rect2.top
+                || rect1.left >= rect2.right || rect1.right <= rect2.left)
+            return false;
+        return true;
+    }
+
     // Inside Class start ====================================
 
     class Card {
@@ -221,7 +251,7 @@ public class JGameLib extends View implements SensorEventListener {
         double idx = -1;
         double unitIdx = 0, endIdx = 0;
         RectF dstRect = null;
-        float unitL=0, unitT=0;
+        float unitHrz=0, unitVtc=0;
         float endL, endT;
         float unitW=0, unitH=0;
         float endW, endH;
@@ -231,6 +261,11 @@ public class JGameLib extends View implements SensorEventListener {
         boolean visible = true;
         int backColor = 0x00000000;
         int backType = 1;
+        boolean moveEnd = true;
+        boolean checkCollision = false;
+        String text = null;
+        int textColor = Color.rgb(128,128,128);
+        int textSize = 10;
 
         Card(int clr, int type) {
             backType = type;
@@ -252,18 +287,22 @@ public class JGameLib extends View implements SensorEventListener {
         }
 
         void nextMove() {
-            if(unitL == 0 && unitT == 0) return;
+            if(unitHrz == 0 && unitVtc == 0) return;
             float currL = dstRect.left, currT = dstRect.top;
-            float nextL = currL + unitL, nextT = currT + unitT;
+            float nextL = currL + unitHrz, nextT = currT + unitVtc;
+            if(!moveEnd) {
+                move(nextL, nextT);
+                return;
+            }
 
-            if((unitL != 0 && Math.min(currL,nextL) <= endL && endL <= Math.max(currL,nextL))
-                    || (unitT != 0 && Math.min(currT,nextT) <= endT && endT <= Math.max(currT,nextT))) {
-                unitL = unitT = 0;
+            if((unitHrz != 0 && Math.min(currL,nextL) <= endL && endL <= Math.max(currL,nextL))
+                    || (unitVtc != 0 && Math.min(currT,nextT) <= endT && endT <= Math.max(currT,nextT))) {
+                unitHrz = unitVtc = 0;
                 nextL = endL;
                 nextT = endT;
             }
             move(nextL, nextT);
-            if(unitL == 0 && unitT == 0 && listener != null)
+            if(unitHrz == 0 && unitVtc == 0 && listener != null)
                 listener.onGameWorkEnded(this, WorkType.MOVE);
         }
 
@@ -402,22 +441,29 @@ public class JGameLib extends View implements SensorEventListener {
             this.endT = (float)t;
             float frames = (float)framesOfTime(time);
             if(frames != 0) {
-                this.unitL = (this.endL - this.dstRect.left) / frames;
-                this.unitT = (this.endT - this.dstRect.top) / frames;
+                this.unitHrz = (this.endL - this.dstRect.left) / frames;
+                this.unitVtc = (this.endT - this.dstRect.top) / frames;
             } else {
-                this.unitL = 0;
-                this.unitT = 0;
+                this.unitHrz = 0;
+                this.unitVtc = 0;
             }
+            moveEnd = true;
             needDraw = true;
         }
 
+        public void movingEndless(double hrz, double vtc) {
+            this.unitHrz = (float)hrz;
+            this.unitVtc = (float)vtc;
+            moveEnd = false;
+        }
+
         public void stopMoving() {
-            this.unitL = 0;
-            this.unitT = 0;
+            this.unitHrz = 0;
+            this.unitVtc = 0;
         }
 
         public boolean isMoving() {
-            return unitL != 0 || unitT != 0;
+            return unitHrz != 0 || unitVtc != 0;
         }
 
         public void moveGap(double gapL, double gapT) {
@@ -503,6 +549,24 @@ public class JGameLib extends View implements SensorEventListener {
             for(int i = this.resids.size()-1; i >= 0; i--) {
                 this.resids.remove(i);
             }
+        }
+
+        public void checkCollision() {
+            checkCollision(true);
+        }
+
+        public void checkCollision(boolean check) {
+            checkCollision = check;
+        }
+
+        public void text(String str) {
+            text(str, textColor, textSize);
+        }
+
+        public void text(String str, int color, int size) {
+            text = str;
+            textColor = color;
+            textSize = size;
         }
 
         // Card API end ====================================
@@ -655,6 +719,10 @@ public class JGameLib extends View implements SensorEventListener {
         return res;
     }
 
+    public int random(int min, int max) {
+        return (int)(Math.random() * (max-min+1)) + min;
+    }
+
     // API end ====================================
 
     // Event start ====================================
@@ -779,6 +847,7 @@ public class JGameLib extends View implements SensorEventListener {
         void onGameWorkEnded(Card card, WorkType workType);
         void onGameTouchEvent(Card card, int action, float blockX, float blockY);
         void onGameSensor(int sensorType, float x, float y, float z);
+        void onGameCollision(Card card1, Card card2);
     }
 
     public enum WorkType {
