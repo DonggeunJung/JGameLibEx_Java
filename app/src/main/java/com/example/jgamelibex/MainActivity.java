@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
                 }
                 break;
             }
-            case ANIMATION: {
+            case IMAGE_CHANGE: {
                 if(card == cardHeart) {
                     cardHeart.imageChange(0);
                     cardHeart.resize(9, 6);

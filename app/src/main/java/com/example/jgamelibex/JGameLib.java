@@ -25,6 +25,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 public class JGameLib extends View implements SensorEventListener {
@@ -245,7 +247,7 @@ public class JGameLib extends View implements SensorEventListener {
             if(!visible) return;
             nextMove();
             nextResize();
-            nextAnimation();
+            nextImageChange();
             nextSourceRect();
         }
 
@@ -280,7 +282,7 @@ public class JGameLib extends View implements SensorEventListener {
                 listener.onGameWorkEnded(this, WorkType.RESIZE);
         }
 
-        void nextAnimation() {
+        void nextImageChange() {
             if(unitIdx == 0) return;
             double curridx = idx;
             double nextIdx = curridx + unitIdx;
@@ -293,7 +295,7 @@ public class JGameLib extends View implements SensorEventListener {
                 loadBmp();
             }
             if(unitIdx == 0 && listener != null)
-                listener.onGameWorkEnded(this, WorkType.ANIMATION);
+                listener.onGameWorkEnded(this, WorkType.IMAGE_CHANGE);
             needDraw = true;
         }
 
@@ -559,6 +561,10 @@ public class JGameLib extends View implements SensorEventListener {
     public void clearMemory() {
         timer.removeMessages(0);
         deleteBGM();
+        deleteAllCards();
+    }
+
+    public void deleteAllCards() {
         for(int i = cards.size()-1; i >= 0; i--) {
             Card card = cards.get(i);
             card.deleteAllImages();
@@ -613,6 +619,40 @@ public class JGameLib extends View implements SensorEventListener {
                 }
                 break;
         }
+    }
+
+    public String assetFile(String filePath) {
+        String text = null;
+        try {
+            InputStream is = getContext().getAssets().open(filePath);
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            text = new String(buffer);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return text;
+    }
+
+    public int[][] assetFileIntArray(String filePath) {
+        String bufFile = assetFile(filePath);
+        bufFile = bufFile.trim();
+        String[] lines = bufFile.split("\n");
+        int[][] res = null;
+        for(int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            line = line.trim();
+            if(res == null)
+                res = new int[lines.length][line.length()];
+            for(int j = 0; j < line.length(); j++) {
+                int n = line.charAt(j)-'0';
+                if(i >= res.length || j >= res[i].length) continue;
+                res[i][j] = n;
+            }
+        }
+        return res;
     }
 
     // API end ====================================
@@ -742,7 +782,7 @@ public class JGameLib extends View implements SensorEventListener {
     }
 
     public enum WorkType {
-        AUDIO_PLAY, MOVE, RESIZE, ANIMATION, SOURCE_RECT
+        AUDIO_PLAY, MOVE, RESIZE, IMAGE_CHANGE, SOURCE_RECT
     }
 
     // Interface end ====================================
