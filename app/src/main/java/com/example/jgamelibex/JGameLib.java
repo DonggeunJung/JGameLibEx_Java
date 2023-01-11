@@ -122,6 +122,23 @@ public class JGameLib extends View implements SensorEventListener {
         }
     }
 
+    DirType collisionDir(RectF rect1, RectF rect2) {
+        if(rect2.contains(rect1.left, rect1.top)) {
+            if(rect2.right - rect1.left > rect2.bottom - rect1.top) return DirType.LEFT;
+            else return DirType.UP;
+        }
+        if(rect2.contains(rect1.right, rect1.top)) {
+            if(rect1.right - rect2.left > rect2.bottom - rect1.top) return DirType.RIGHT;
+            else return DirType.UP;
+        }
+        if(rect2.contains(rect1.right, rect1.bottom)) {
+            if(rect1.right - rect2.left > rect1.bottom - rect2.top) return DirType.RIGHT;
+            else return DirType.DOWN;
+        }
+        if(rect2.right - rect1.left > rect1.bottom - rect2.top) return DirType.LEFT;
+        else return DirType.DOWN;
+    }
+
     void drawRect(Canvas canvas, Paint pnt, int color, RectF dstRect) {
         pnt.setColor(color);
         canvas.drawRect(dstRect, pnt);
@@ -852,6 +869,10 @@ public class JGameLib extends View implements SensorEventListener {
 
     public enum WorkType {
         AUDIO_PLAY, MOVE, RESIZE, IMAGE_CHANGE, SOURCE_RECT
+    }
+
+    public enum DirType {
+        LEFT, RIGHT, UP, DOWN, LEFT_UP, LEFT_DOWN, RIGHT_UP, RIGHT_DOWN
     }
 
     // Interface end ====================================
