@@ -29,6 +29,7 @@ import androidx.appcompat.app.AlertDialog;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class JGameLib extends View implements SensorEventListener {
     boolean firstDraw = true;
@@ -42,6 +43,7 @@ public class JGameLib extends View implements SensorEventListener {
     Card touchedCard = null;
     float touchX = 0;
     float touchY = 0;
+    HashSet<Card> removeCards = new HashSet();
 
     public JGameLib(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -90,7 +92,8 @@ public class JGameLib extends View implements SensorEventListener {
         pnt.setStyle(Paint.Style.FILL);
         pnt.setAntiAlias(true);
 
-        for(int i=0; i < cards.size(); i++) {
+        int i=0;
+        while(i < cards.size()) {
             Card card = cards.get(i);
             if(!card.visible) continue;
             RectF scrRect = screenRect;
@@ -104,7 +107,7 @@ public class JGameLib extends View implements SensorEventListener {
                     drawBitmap(canvas, pnt, card.bmp, scrRect, card.srcRect);
                 }
             } else {
-                drawRect(canvas, pnt, card.backColor, scrRect);
+                drawRect(canvas, pnt, card, scrRect);
             }
             if(card.text != null) {
                 drawText(canvas, pnt, scrRect, card);
@@ -119,28 +122,37 @@ public class JGameLib extends View implements SensorEventListener {
                     }
                 }
             }
+            i++;
+        }
+        checkRemoveCards();
+    }
+
+    void checkRemoveCards() {
+        while(!removeCards.isEmpty()) {
+            for(int i=cards.size()-1; i >= 0; i--) {
+                Card card = cards.get(i);
+                if(removeCards.contains(card)) {
+                    removeCards.remove(card);
+                    cards.remove(i);
+                }
+            }
         }
     }
 
-    DirType collisionDir(RectF rect1, RectF rect2) {
-        if(rect2.contains(rect1.left, rect1.top)) {
-            if(rect2.right - rect1.left > rect2.bottom - rect1.top) return DirType.LEFT;
-            else return DirType.UP;
+    void drawRect(Canvas canvas, Paint pnt, Card card, RectF dstRect) {
+        if(card.edgeThick > 0f) {
+            pnt.setStyle(Paint.Style.STROKE);
+            float strokeWidth = blockSize * card.edgeThick;
+            dstRect.left += strokeWidth;
+            dstRect.right -= strokeWidth;
+            dstRect.top += strokeWidth;
+            dstRect.bottom -= strokeWidth;
+            pnt.setStrokeWidth(strokeWidth);
+            pnt.setColor(card.edgeColor);
+            canvas.drawRect(dstRect, pnt);
         }
-        if(rect2.contains(rect1.right, rect1.top)) {
-            if(rect1.right - rect2.left > rect2.bottom - rect1.top) return DirType.RIGHT;
-            else return DirType.UP;
-        }
-        if(rect2.contains(rect1.right, rect1.bottom)) {
-            if(rect1.right - rect2.left > rect1.bottom - rect2.top) return DirType.RIGHT;
-            else return DirType.DOWN;
-        }
-        if(rect2.right - rect1.left > rect1.bottom - rect2.top) return DirType.LEFT;
-        else return DirType.DOWN;
-    }
-
-    void drawRect(Canvas canvas, Paint pnt, int color, RectF dstRect) {
-        pnt.setColor(color);
+        pnt.setStyle(Paint.Style.FILL);
+        pnt.setColor(card.backColor);
         canvas.drawRect(dstRect, pnt);
     }
 
@@ -278,6 +290,8 @@ public class JGameLib extends View implements SensorEventListener {
         boolean visible = true;
         int backColor = 0x00000000;
         int backType = 1;
+        int edgeColor = Color.TRANSPARENT;
+        float edgeThick = 0f;
         boolean moveEnd = true;
         boolean checkCollision = false;
         String text = null;
@@ -472,11 +486,13 @@ public class JGameLib extends View implements SensorEventListener {
             this.unitHrz = (float)hrz;
             this.unitVtc = (float)vtc;
             moveEnd = false;
+            needDraw = true;
         }
 
         public void stopMoving() {
             this.unitHrz = 0;
             this.unitVtc = 0;
+            needDraw = false;
         }
 
         public boolean isMoving() {
@@ -586,6 +602,23 @@ public class JGameLib extends View implements SensorEventListener {
             textSize = size;
         }
 
+        public void edgeColor(int color) {
+            edgeColor = color;
+        }
+
+        public void edgeThick(double thick) {
+            edgeThick = (float)thick;
+        }
+
+        public void edge(int color, double thick) {
+            edgeColor = color;
+            edgeThick = (float)thick;
+        }
+
+        public DirType collisionDir(Card card2) {
+            return collisionDirRect(this.dstRect, card2.dstRect);
+        }
+
         // Card API end ====================================
 
     }
@@ -640,12 +673,13 @@ public class JGameLib extends View implements SensorEventListener {
     }
 
     public void clearMemory() {
-        timer.removeMessages(0);
+        needDraw = false;
         deleteBGM();
         deleteAllCards();
     }
 
     public void deleteAllCards() {
+        removeCards = new HashSet();
         for(int i = cards.size()-1; i >= 0; i--) {
             Card card = cards.get(i);
             card.deleteAllImages();
@@ -736,8 +770,41 @@ public class JGameLib extends View implements SensorEventListener {
         return res;
     }
 
+    public int random(int max) {
+        return random(0, max);
+    }
+
     public int random(int min, int max) {
         return (int)(Math.random() * (max-min+1)) + min;
+    }
+
+    public DirType collisionDirRect(RectF rect1, RectF rect2) {
+        if(rect2.contains(rect1.left, rect1.top)) {
+            if(rect2.right - rect1.left > rect2.bottom - rect1.top)
+                return DirType.UP;
+            else
+                return DirType.LEFT;
+        }
+        if(rect2.contains(rect1.right, rect1.top)) {
+            if(rect1.right - rect2.left > rect2.bottom - rect1.top)
+                return DirType.UP;
+            else
+                return DirType.RIGHT;
+        }
+        if(rect2.contains(rect1.right, rect1.bottom)) {
+            if(rect1.right - rect2.left > rect1.bottom - rect2.top)
+                return DirType.DOWN;
+            else
+                return DirType.RIGHT;
+        }
+        if(rect2.right - rect1.left > rect1.bottom - rect2.top)
+            return DirType.DOWN;
+        else
+            return DirType.LEFT;
+    }
+
+    public void removeCard(Card card) {
+        removeCards.add(card);
     }
 
     // API end ====================================
