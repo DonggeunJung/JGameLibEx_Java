@@ -4,7 +4,9 @@
 /* Contact : topsan72@gmail.com                       */
 package com.example.jgamelibex;
 
+import static android.content.Context.MODE_PRIVATE;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -32,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 public class JGameLib extends View implements SensorEventListener {
+    static String TAG = "JGameLib";
     boolean firstDraw = true;
     float totalPixelW = 480, totalPixelH = 800;
     float blocksW = 480, blocksH = 800;
@@ -44,6 +47,7 @@ public class JGameLib extends View implements SensorEventListener {
     float touchX = 0;
     float touchY = 0;
     HashSet<Card> removeCards = new HashSet();
+    SharedPreferences sharedPref = null;
 
     public JGameLib(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -272,6 +276,15 @@ public class JGameLib extends View implements SensorEventListener {
                 || rect1.left >= rect2.right || rect1.right <= rect2.left)
             return false;
         return true;
+    }
+
+    SharedPreferences getSharedPref() {
+        if(sharedPref == null)
+            sharedPref = getContext().getSharedPreferences(TAG, MODE_PRIVATE);
+        return sharedPref;
+    }
+    SharedPreferences.Editor getSharedPrefEdit() {
+        return getSharedPref().edit();
     }
 
     // Inside Class start ====================================
@@ -828,6 +841,66 @@ public class JGameLib extends View implements SensorEventListener {
 
     public void removeCard(Card card) {
         removeCards.add(card);
+    }
+
+    public void set(String key, boolean b) {
+        SharedPreferences.Editor editor = getSharedPrefEdit();
+        editor.putBoolean(key, b);
+        editor.commit();
+    }
+
+    public void set(String key, int n) {
+        SharedPreferences.Editor editor = getSharedPrefEdit();
+        editor.putInt(key, n);
+        editor.commit();
+    }
+
+    public void set(String key, float f) {
+        SharedPreferences.Editor editor = getSharedPrefEdit();
+        editor.putFloat(key, f);
+        editor.commit();
+    }
+
+    public void set(String key, String str) {
+        SharedPreferences.Editor editor = getSharedPrefEdit();
+        editor.putString(key, str);
+        editor.commit();
+    }
+
+    public boolean getBoolean(String key) {
+        return getBoolean(key, false);
+    }
+
+    public boolean getBoolean(String key, boolean b) {
+        SharedPreferences sp = getSharedPref();
+        return sp.getBoolean(key, b);
+    }
+
+    public int getInt(String key) {
+        return getInt(key, 0);
+    }
+
+    public int getInt(String key, int n) {
+        SharedPreferences sp = getSharedPref();
+        return sp.getInt(key, n);
+    }
+
+    public float getFloat(String key) {
+        return getFloat(key, 0f);
+    }
+
+    public float getFloat(String key, float f) {
+        SharedPreferences sp = getSharedPref();
+        return sp.getFloat(key, f);
+    }
+
+    public String getString(String key) {
+        return getString(key, "");
+    }
+
+    public String getString(String key, String str) {
+        SharedPreferences sp = getSharedPref();
+        return sp.getString(key, str);
     }
 
     // API end ====================================
