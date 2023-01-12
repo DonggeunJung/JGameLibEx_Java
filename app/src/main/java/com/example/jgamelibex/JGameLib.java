@@ -1,5 +1,5 @@
 /* JGameLib_Java : 2D Game library for education      */
-/* Date : 2023.Jan.04 ~                               */
+/* Date : 2023.Jan.04 ~ 2023.Jan.12                   */
 /* Author : Dennis (Donggeun Jung)                    */
 /* Contact : topsan72@gmail.com                       */
 package com.example.jgamelibex;
@@ -143,10 +143,11 @@ public class JGameLib extends View implements SensorEventListener {
         if(card.edgeThick > 0f) {
             pnt.setStyle(Paint.Style.STROKE);
             float strokeWidth = blockSize * card.edgeThick;
-            dstRect.left += strokeWidth;
-            dstRect.right -= strokeWidth;
-            dstRect.top += strokeWidth;
-            dstRect.bottom -= strokeWidth;
+            float strokeHalf = strokeWidth / 2f;
+            dstRect.left += strokeHalf;
+            dstRect.right -= strokeHalf;
+            dstRect.top += strokeHalf;
+            dstRect.bottom -= strokeHalf;
             pnt.setStrokeWidth(strokeWidth);
             pnt.setColor(card.edgeColor);
             canvas.drawRect(dstRect, pnt);
@@ -597,10 +598,31 @@ public class JGameLib extends View implements SensorEventListener {
             text(str, textColor, textSize);
         }
 
+        public void text(int n) {
+            text("" + n, textColor, textSize);
+        }
+
         public void text(String str, int color, double size) {
             text = str;
             textColor = color;
             textSize = size;
+            needDraw = true;
+        }
+
+        public String text() {
+            return text;
+        }
+
+        public int text2int() {
+            return Integer.parseInt(text);
+        }
+
+        public boolean isTextEmpty() {
+            return text == null || text.isEmpty();
+        }
+
+        public void backColor(int color) {
+            backColor = color;
         }
 
         public void edgeColor(int color) {
