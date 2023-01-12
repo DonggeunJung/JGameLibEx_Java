@@ -157,10 +157,11 @@ public class JGameLib extends View implements SensorEventListener {
     }
 
     void drawText(Canvas canvas, Paint pnt, RectF dstRect, Card card) {
-        pnt.setTextSize(card.textSize);
+        int textSizePixel = (int)(blockSize * card.textSize);
+        pnt.setTextSize(textSizePixel);
         pnt.setColor(card.textColor);
         pnt.setTextAlign(Paint.Align.CENTER);
-        float y = dstRect.centerY() + (card.textSize / 3f);
+        float y = dstRect.centerY() + (textSizePixel / 3f);
         canvas.drawText(card.text, dstRect.centerX(), y, pnt);
     }
 
@@ -296,7 +297,7 @@ public class JGameLib extends View implements SensorEventListener {
         boolean checkCollision = false;
         String text = null;
         int textColor = Color.rgb(128,128,128);
-        int textSize = 10;
+        double textSize = 10;
 
         Card(int clr, int type) {
             backType = type;
@@ -596,7 +597,7 @@ public class JGameLib extends View implements SensorEventListener {
             text(str, textColor, textSize);
         }
 
-        public void text(String str, int color, int size) {
+        public void text(String str, int color, double size) {
             text = str;
             textColor = color;
             textSize = size;
