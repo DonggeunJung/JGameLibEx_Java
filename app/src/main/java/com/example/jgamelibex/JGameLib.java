@@ -1,5 +1,5 @@
 /* JGameLib_Java : 2D Game library for education      */
-/* Date : 2023.Jan.04 ~ 2023.Jan.12                   */
+/* Date : 2023.Jan.04 ~ 2023.Jan.13                   */
 /* Author : Dennis (Donggeun Jung)                    */
 /* Contact : topsan72@gmail.com                       */
 package com.example.jgamelibex;
@@ -96,8 +96,7 @@ public class JGameLib extends View implements SensorEventListener {
         pnt.setStyle(Paint.Style.FILL);
         pnt.setAntiAlias(true);
 
-        int i=0;
-        while(i < cards.size()) {
+        for(int i=0; i < cards.size(); i++) {
             Card card = cards.get(i);
             if(!card.visible) continue;
             RectF scrRect = screenRect;
@@ -128,7 +127,6 @@ public class JGameLib extends View implements SensorEventListener {
                     }
                 }
             }
-            i++;
         }
         checkRemoveCards();
     }
@@ -366,7 +364,7 @@ public class JGameLib extends View implements SensorEventListener {
             if(unitIdx == 0) return;
             double curridx = idx;
             double nextIdx = curridx + unitIdx;
-            if(nextIdx >= endIdx || nextIdx >= resids.size()-1) {
+            if(nextIdx > endIdx || nextIdx >= resids.size()) {
                 unitIdx = 0;
                 nextIdx = Math.min((int)endIdx, resids.size()-1);
             }
@@ -393,6 +391,15 @@ public class JGameLib extends View implements SensorEventListener {
             sourceRect(nextL, nextT, srcRect.width(), srcRect.height());
             if(unitSrcL == 0 && unitSrcT == 0 && listener != null)
                 listener.onGameWorkEnded(this, WorkType.SOURCE_RECT);
+        }
+
+        void movingTarget(float l, float t, float unitH, float unitV) {
+            this.endL = l;
+            this.endT = t;
+            this.unitHrz = unitH;
+            this.unitVtc = unitV;
+            moveEnd = true;
+            needDraw = true;
         }
 
         // Card API start ====================================
@@ -478,21 +485,26 @@ public class JGameLib extends View implements SensorEventListener {
         }
 
         public void moving(double l, double t, double time) {
-            this.endL = (float)l;
-            this.endT = (float)t;
-            float frames = (float)framesOfTime(time);
+            double unitH = 0, unitV = 0;
+            double frames = framesOfTime(time);
             if(frames != 0) {
-                this.unitHrz = (this.endL - this.dstRect.left) / frames;
-                this.unitVtc = (this.endT - this.dstRect.top) / frames;
-            } else {
-                this.unitHrz = 0;
-                this.unitVtc = 0;
+                unitH = (l - this.dstRect.left) / frames;
+                unitV = (t - this.dstRect.top) / frames;
             }
-            moveEnd = true;
-            needDraw = true;
+            movingTarget((float)l, (float)t, (float)unitH, (float)unitV);
         }
 
-        public void movingEndless(double hrz, double vtc) {
+        public void movingSpeed(double l, double t, double speed) {
+            double gapX = (l - this.dstRect.left);
+            double gapY = (t - this.dstRect.top);
+            double diagonal = Math.sqrt(gapX*gapX + gapY*gapY);
+            double rate = speed / diagonal;
+            float unitH = (float)(gapX * rate);
+            float unitV = (float)(gapY * rate);
+            movingTarget((float)l, (float)t, unitH, unitV);
+        }
+
+        public void movingDir(double hrz, double vtc) {
             this.unitHrz = (float)hrz;
             this.unitVtc = (float)vtc;
             moveEnd = false;
@@ -502,7 +514,6 @@ public class JGameLib extends View implements SensorEventListener {
         public void stopMoving() {
             this.unitHrz = 0;
             this.unitVtc = 0;
-            needDraw = false;
         }
 
         public boolean isMoving() {
@@ -574,7 +585,7 @@ public class JGameLib extends View implements SensorEventListener {
             this.endIdx = end;
             double frames = framesOfTime(time);
             if(frames != 0)
-                this.unitIdx = (double)(end - start) / frames;
+                this.unitIdx = (double)(end - start + 1) / frames;
             else
                 this.unitIdx = 0;
             needDraw = true;
@@ -650,6 +661,17 @@ public class JGameLib extends View implements SensorEventListener {
             return collisionDirRect(this.dstRect, card2.dstRect);
         }
 
+        public void stopAllWork() {
+            if(this.unitSrcL != 0 || this.unitSrcT != 0)
+                stopSourceRectIng();
+            if(this.unitHrz != 0 || this.unitVtc != 0)
+                stopMoving();
+            if(this.unitW != 0 || this.unitH != 0)
+                stopResizing();
+            if(this.unitIdx != 0)
+                stopImageChanging();
+        }
+
         // Card API end ====================================
 
     }
@@ -714,6 +736,7 @@ public class JGameLib extends View implements SensorEventListener {
         for(int i = cards.size()-1; i >= 0; i--) {
             Card card = cards.get(i);
             card.deleteAllImages();
+            card.bmp = null;
             cards.remove(i);
         }
     }
@@ -903,6 +926,12 @@ public class JGameLib extends View implements SensorEventListener {
     public String getString(String key, String str) {
         SharedPreferences sp = getSharedPref();
         return sp.getString(key, str);
+    }
+
+    public void stopAllWork() {
+        for(Card card : cards) {
+            card.stopAllWork();
+        }
     }
 
     // API end ====================================
