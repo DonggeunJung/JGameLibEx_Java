@@ -103,6 +103,8 @@ public class JGameLib extends View implements SensorEventListener {
             RectF scrRect = screenRect;
             if(card.dstRect != null) {
                 scrRect = getDstRect(card);
+                if(!checkCollision(scrRect, screenRect))
+                    continue;
             }
             if(card.backType == 1 && card.bmp != null) {
                 if(card.srcRect == null) {
@@ -269,13 +271,6 @@ public class JGameLib extends View implements SensorEventListener {
                 return i;
         }
         return -1;
-    }
-
-    boolean checkCollision(RectF rect1, RectF rect2) {
-        if(rect1.top >= rect2.bottom || rect1.bottom <= rect2.top
-                || rect1.left >= rect2.right || rect1.right <= rect2.left)
-            return false;
-        return true;
     }
 
     SharedPreferences getSharedPref() {
@@ -812,6 +807,13 @@ public class JGameLib extends View implements SensorEventListener {
 
     public int random(int min, int max) {
         return (int)(Math.random() * (max-min+1)) + min;
+    }
+
+    public boolean checkCollision(RectF rect1, RectF rect2) {
+        if(rect1.top >= rect2.bottom || rect1.bottom <= rect2.top
+                || rect1.left >= rect2.right || rect1.right <= rect2.left)
+            return false;
+        return true;
     }
 
     public DirType collisionDirRect(RectF rect1, RectF rect2) {
