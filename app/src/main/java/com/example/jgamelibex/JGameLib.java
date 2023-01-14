@@ -1,5 +1,5 @@
 /* JGameLib_Java : 2D Game library for education      */
-/* Date : 2023.Jan.04 ~ 2023.Jan.13                   */
+/* Date : 2023.Jan.04 ~ 2023.Jan.14                   */
 /* Author : Dennis (Donggeun Jung)                    */
 /* Contact : topsan72@gmail.com                       */
 package com.example.jgamelibex;
@@ -824,8 +824,8 @@ public class JGameLib extends View implements SensorEventListener {
         return res;
     }
 
-    public int random(int max) {
-        return random(0, max);
+    public int random(int range) {
+        return random(0, range-1);
     }
 
     public int random(int min, int max) {
