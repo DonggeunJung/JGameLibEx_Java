@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
         super.onDestroy();
     }
 
-    private void initGame() {
+    void initGame() {
         gameLib.setScreenGrid(100,140);
         gameLib.listener(this);
         gameBackground = gameLib.addCard(R.drawable.anipang_standby);
@@ -48,6 +48,11 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
         gameLib.startSensorAccelerometer();
     }
 
+    void scrollBackground() {
+        gameBackground.sourceRect(0, 0, 30, 100);
+        gameBackground.sourceRectIng(100, 0, 8);
+    }
+
     // User Event start ====================================
 
     public void onBtn1(View v) {
@@ -59,8 +64,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
             gameBackground.stopSourceRectIng();
         } else {
             gameBackground.imageChange(1);
-            gameBackground.sourceRect(0, 0, 30, 100);
-            gameBackground.sourceRectIng(100, 0, 4);
+            scrollBackground();
         }
     }
 
@@ -98,8 +102,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
             }
             case SOURCE_RECT: {
                 if(card == gameBackground) {
-                    gameBackground.sourceRect(0, 0, 30, 100);
-                    gameBackground.sourceRectIng(100, 0, 4);
+                    scrollBackground();
                 }
                 break;
             }
@@ -127,6 +130,9 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
 
     @Override
     public void onGameCollision(JGameLib.Card card1, JGameLib.Card card2) {}
+
+    @Override
+    public void onGameTimer(int what) {}
 
     // Game Event end ====================================
 

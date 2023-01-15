@@ -1,5 +1,5 @@
 /* JGameLib_Java : 2D Game library for education      */
-/* Date : 2023.Jan.04 ~ 2023.Jan.14                   */
+/* Date : 2023.Jan.04 ~ 2023.Jan.15                   */
 /* Author : Dennis (Donggeun Jung)                    */
 /* Contact : topsan72@gmail.com                       */
 package com.example.jgamelibex;
@@ -40,7 +40,8 @@ public class JGameLib extends View implements SensorEventListener {
     float blocksW = 480, blocksH = 800;
     float blockSize = totalPixelH / blocksH;
     RectF screenRect;
-    int timerGap = 50;
+    int timerGap1 = 50;
+    int timerGap2 = 50;
     boolean needDraw = false;
     ArrayList<Card> cards = new ArrayList();
     Card touchedCard = null;
@@ -58,8 +59,9 @@ public class JGameLib extends View implements SensorEventListener {
         totalPixelH = canvas.getHeight();
         screenRect = getScreenRect();
         blockSize = screenRect.width() / blocksW;
-        timer.removeMessages(0);
-        timer.sendEmptyMessageDelayed(0, timerGap);
+        timer1.removeMessages(0);
+        timer1.sendEmptyMessageDelayed(0, 50);
+        timer2.removeMessages(0);
     }
 
     RectF getScreenRect() {
@@ -102,8 +104,11 @@ public class JGameLib extends View implements SensorEventListener {
             RectF scrRect = screenRect;
             if(card.dstRect != null) {
                 scrRect = getDstRect(card);
-                if(!checkCollision(scrRect, screenRect))
+                if(!checkCollision(scrRect, screenRect)) {
+                    if(card.autoRemove)
+                        removeCards.add(card);
                     continue;
+                }
             }
             if(card.backType == 1 && card.bmp != null) {
                 if(card.srcRect == null) {
@@ -205,20 +210,49 @@ public class JGameLib extends View implements SensorEventListener {
             RectF screenRect2 = new RectF(dstRect);
             screenRect2.top = screenRect.bottom;
             canvas.drawBitmap(bmp, sourceRect2, screenRect2, pnt);
+        } else if(sourceRect.left < 0) {
+            sourceRect.left = 0;
+            float firstRate = (float)sourceRect.width() / (sourceRectR - sourceRectL);
+            float firstDstWidth = screenRect.width() * firstRate;
+            screenRect.left = screenRect.right - firstDstWidth;
+            sourceRectL += bmpPixelW;
+            Rect sourceRect2 = new Rect((int)sourceRectL, (int)sourceRectT, (int)bmpPixelW, (int)sourceRectB);
+            RectF screenRect2 = new RectF(dstRect);
+            screenRect2.right = screenRect.left;
+            canvas.drawBitmap(bmp, sourceRect2, screenRect2, pnt);
+        } else if(sourceRect.top < 0) {
+            sourceRect.top = 0;
+            float firstRate = (float)sourceRect.height() / (sourceRectB - sourceRectT);
+            float firstDstHeight = screenRect.height() * firstRate;
+            screenRect.top = screenRect.bottom - firstDstHeight;
+            sourceRectT += bmpPixelH;
+            Rect sourceRect2 = new Rect((int)sourceRectL, (int)sourceRectT, (int)sourceRectR, (int)bmpPixelH);
+            RectF screenRect2 = new RectF(dstRect);
+            screenRect2.bottom = screenRect.top;
+            canvas.drawBitmap(bmp, sourceRect2, screenRect2, pnt);
         }
         canvas.drawBitmap(bmp, sourceRect, screenRect, pnt);
     }
 
-    Handler timer = new Handler(new Handler.Callback() {
+    Handler timer1 = new Handler(new Handler.Callback() {
         public boolean handleMessage(Message msg) {
-            if(needDraw) {
+            if (needDraw) {
                 needDraw = false;
-                for(Card card : cards) {
+                for (Card card : cards) {
                     card.next();
                 }
                 redraw();
             }
-            timer.sendEmptyMessageDelayed(0, timerGap);
+            timer1.sendEmptyMessageDelayed(0, timerGap1);
+            return false;
+        }
+    });
+
+    Handler timer2 = new Handler(new Handler.Callback() {
+        public boolean handleMessage(Message msg) {
+            if(listener != null)
+                listener.onGameTimer(msg.what);
+            timer2.sendEmptyMessageDelayed(0, timerGap2);
             return false;
         }
     });
@@ -305,6 +339,10 @@ public class JGameLib extends View implements SensorEventListener {
         String text = null;
         int textColor = Color.rgb(128,128,128);
         double textSize = 10;
+        boolean autoRemove = false;
+        int valueN = 0;
+        double valueF = 0;
+        String valueS = "";
 
         Card(int clr, int type) {
             backType = type;
@@ -460,7 +498,7 @@ public class JGameLib extends View implements SensorEventListener {
         }
 
         public RectF screenRect() {
-            return this.dstRect;
+            return new RectF(this.dstRect);
         }
 
         public void screenRect(double l, double t, double w, double h) {
@@ -672,6 +710,38 @@ public class JGameLib extends View implements SensorEventListener {
                 stopImageChanging();
         }
 
+        public void autoRemove() {
+            autoRemove(true);
+        }
+
+        public void autoRemove(boolean remove) {
+            this.autoRemove = remove;
+        }
+
+        public void set(int value) {
+            this.valueN = value;
+        }
+
+        public void set(double value) {
+            this.valueF = value;
+        }
+
+        public void set(String value) {
+            this.valueS = value;
+        }
+
+        public int getInt() {
+            return this.valueN;
+        }
+
+        public double getDouble() {
+            return this.valueF;
+        }
+
+        public String getString() {
+            return this.valueS;
+        }
+
         // Card API end ====================================
 
     }
@@ -722,7 +792,7 @@ public class JGameLib extends View implements SensorEventListener {
 
     public double framesOfTime(double time) {
         double miliTime = time * 1000.;
-        return miliTime / timerGap;
+        return miliTime / timerGap1;
     }
 
     public void clearMemory() {
@@ -929,9 +999,20 @@ public class JGameLib extends View implements SensorEventListener {
     }
 
     public void stopAllWork() {
+        needDraw = false;
         for(Card card : cards) {
             card.stopAllWork();
         }
+    }
+
+    public void startTimer(double timeGap) {
+        int milisec = (int)(timeGap * 1000);
+        timerGap2 = milisec;
+        timer2.sendEmptyMessageDelayed(0, milisec);
+    }
+
+    public void stopTimer() {
+        timer2.removeMessages(0);
     }
 
     // API end ====================================
@@ -1059,6 +1140,7 @@ public class JGameLib extends View implements SensorEventListener {
         void onGameTouchEvent(Card card, int action, float blockX, float blockY);
         void onGameSensor(int sensorType, float x, float y, float z);
         void onGameCollision(Card card1, Card card2);
+        void onGameTimer(int what);
     }
 
     public enum WorkType {
