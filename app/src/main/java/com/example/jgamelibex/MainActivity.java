@@ -35,14 +35,12 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
         gameBackground.addImage(R.drawable.scroll_back_woods);
         cardColor = gameLib.addCardColor(Color.rgb(255,240,240), 80,110,20,20);
         cardHeart = gameLib.addCard(R.drawable.icon_heart1, 34, 12, 9, 6);
-        cardHeart.addImage(R.drawable.progressing00);
-        cardHeart.addImage(R.drawable.progressing01);
-        cardHeart.addImage(R.drawable.progressing02);
-        cardHeart.addImage(R.drawable.progressing03);
-        cardHeart.addImage(R.drawable.progressing04);
-        cardHeart.addImage(R.drawable.progressing05);
-        cardHeart.addImage(R.drawable.progressing06);
-        cardHeart.addImage(R.drawable.progressing07);
+        cardHeart.addImage(R.drawable.explosion01);
+        cardHeart.addImage(R.drawable.explosion02);
+        cardHeart.addImage(R.drawable.explosion03);
+        cardHeart.addImage(R.drawable.explosion04);
+        cardHeart.addImage(R.drawable.explosion05);
+        cardHeart.addImage(R.drawable.explosion06);
 
         gameLib.playBGM(R.raw.morning);
         gameLib.startSensorAccelerometer();
@@ -87,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
             }
             case RESIZE: {
                 if(card == cardHeart) {
-                    cardHeart.imageChanging(1, 8, 1);
+                    cardHeart.imageChanging(1, 6, 1);
                     gameLib.playAudioBeep(R.raw.fireworks_boom);
                 }
                 break;
