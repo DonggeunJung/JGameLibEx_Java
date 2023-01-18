@@ -1,5 +1,5 @@
 /* JGameLib_Java : 2D Game library for education      */
-/* Date : 2023.Jan.04 ~ 2023.Jan.15                   */
+/* Date : 2023.Jan.04 ~ 2023.Jan.18                   */
 /* Author : Dennis (Donggeun Jung)                    */
 /* Contact : topsan72@gmail.com                       */
 package com.example.shakepop;
@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 
 public class JGameLib extends View implements SensorEventListener {
     static String TAG = "JGameLib";
@@ -62,6 +63,11 @@ public class JGameLib extends View implements SensorEventListener {
         timer1.removeMessages(0);
         timer1.sendEmptyMessageDelayed(0, 50);
         timer2.removeMessages(0);
+        if(audioBeeps.isEmpty()) {
+            for(int i=0; i < 3; i++) {
+                audioBeeps.add(new AudioBeep(this.getContext()));
+            }
+        }
     }
 
     RectF getScreenRect() {
@@ -268,11 +274,11 @@ public class JGameLib extends View implements SensorEventListener {
     }
 
     private float getBlocksHorizontal(float pixelH) {
-        return pixelH / blockSize;
+        return (pixelH-screenRect.left) / blockSize;
     }
 
     private float getBlocksVertical(float pixelV) {
-        return pixelV / blockSize;
+        return (pixelV-screenRect.top) / blockSize;
     }
 
     Bitmap getBitmap(int resid) {
@@ -1033,8 +1039,8 @@ public class JGameLib extends View implements SensorEventListener {
                 blockY = getBlocksVertical(pixelY);
                 break;
             case MotionEvent.ACTION_MOVE :
-                blockX = getBlocksHorizontal(pixelX - touchX);
-                blockY = getBlocksVertical(pixelY - touchY);
+                blockX = getBlocksHorizontal(pixelX) - getBlocksHorizontal(touchX);
+                blockY = getBlocksVertical(pixelY) - getBlocksVertical(touchY);
                 break;
             case MotionEvent.ACTION_UP :
                 touchedCard = null;
@@ -1054,23 +1060,38 @@ public class JGameLib extends View implements SensorEventListener {
 
     // Audio play start ====================================
 
-    SoundPool soundPool = new SoundPool.Builder().build();
-    int soundId = -1;
-
     public void playAudioBeep(int resid) {
-        if(soundId >= 0) {
-            soundPool.stop(soundId);
-            soundPool = new SoundPool.Builder().build();
+        if(audioBeeps.isEmpty()) return;
+        AudioBeep ab = audioBeeps.poll();
+        ab.play(resid);
+        audioBeeps.add(ab);
+    }
+
+    LinkedList<AudioBeep> audioBeeps = new LinkedList();
+
+    class AudioBeep {
+        SoundPool soundPool = new SoundPool.Builder().build();
+        int soundId = -1;
+        Context context = null;
+        AudioBeep(Context ctx) {
+            this.context = ctx;
         }
-        soundId = soundPool.load(this.getContext(), resid,1);
-        soundPool.setOnLoadCompleteListener(
-                new SoundPool.OnLoadCompleteListener() {
-                    @Override
-                    public void onLoadComplete(SoundPool soundPool, int id, int status) {
-                        soundPool.play(id, 1, 1, 1, 0, 1f);
+
+        public void play(int resid) {
+            if (soundId >= 0) {
+                soundPool.stop(soundId);
+                soundPool = new SoundPool.Builder().build();
+            }
+            soundId = soundPool.load(context, resid, 1);
+            soundPool.setOnLoadCompleteListener(
+                    new SoundPool.OnLoadCompleteListener() {
+                        @Override
+                        public void onLoadComplete(SoundPool soundPool, int id, int status) {
+                            soundPool.play(id, 1, 1, 1, 0, 1f);
+                        }
                     }
-                }
-        );
+            );
+        }
     }
 
     MediaPlayer mPlayer = null;
