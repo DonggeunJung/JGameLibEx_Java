@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
         gameLib.setScreenGrid(100,140);
         gameLib.listener(this);
         gameBackground = gameLib.addCard(R.drawable.anipang_standby);
-        gameBackground.addImage(R.drawable.scroll_back_woods);
+        gameBackground.addImage(R.drawable.flappybird_back);
         cardColor = gameLib.addCardColor(Color.rgb(255,240,240), 80,110,20,20);
         cardHeart = gameLib.addCard(R.drawable.icon_heart1, 34, 12, 9, 6);
         cardHeart.addImage(R.drawable.explosion01);
