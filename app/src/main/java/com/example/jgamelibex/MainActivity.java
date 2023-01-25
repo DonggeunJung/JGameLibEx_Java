@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
         cardHeart.addImage(R.drawable.explosion05);
         cardHeart.addImage(R.drawable.explosion06);
 
-        gameLib.playBGM(R.raw.morning);
+        gameLib.playBGM(R.raw.motivational);
         gameLib.startSensorAccelerometer();
     }
 
@@ -130,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     public void onGameCollision(JGameLib.Card card1, JGameLib.Card card2) {}
 
     @Override
-    public void onGameTimer(int what) {}
+    public void onGameTimer() {}
 
     // Game Event end ====================================
 
