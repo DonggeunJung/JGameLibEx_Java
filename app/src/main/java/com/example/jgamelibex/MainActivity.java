@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements JGameLib.GameEven
     }
 
     @Override
-    public void onGameTouchEvent(JGameLib.Card card, int action, float blockX, float blockY) {
+    public void onGameTouchEvent(JGameLib.Card card, int action, float blockX, float blockY, MotionEvent event) {
         if(card == cardHeart && action == MotionEvent.ACTION_MOVE) {
             card.moveGap(blockX, blockY);
         }
